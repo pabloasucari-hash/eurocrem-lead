@@ -81,6 +81,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .form-group input:focus,.form-group textarea:focus{outline:none;border-color:#4285f4;box-shadow:0 0 0 2px rgba(66,133,244,.12)}
 .form-group textarea{resize:vertical;min-height:68px}
 .readonly-field{padding:8px 0;font-size:13px;color:#555;border-bottom:1px solid #f0f0f0}
+.link-icon{font-size:11px;color:#4285f4;text-decoration:none;margin-left:5px;opacity:.7}
+.link-icon:hover{opacity:1}
 
 /* Actions */
 .actions{display:flex;gap:10px;margin-top:20px;align-items:center;padding-bottom:40px}
@@ -162,11 +164,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
           <input type="text" id="f-email_2" placeholder="" data-field="email_2">
         </div>
         <div class="form-group">
-          <label><span class="field-dot" id="dot-instagram"></span>Instagram</label>
+          <label><span class="field-dot" id="dot-instagram"></span>Instagram <a id="link-instagram" href="#" target="_blank" class="link-icon" style="display:none">↗</a></label>
           <input type="text" id="f-instagram" placeholder="@handle" data-field="instagram">
         </div>
         <div class="form-group">
-          <label><span class="field-dot" id="dot-facebook"></span>Facebook</label>
+          <label><span class="field-dot" id="dot-facebook"></span>Facebook <a id="link-facebook" href="#" target="_blank" class="link-icon" style="display:none">↗</a></label>
           <input type="text" id="f-facebook" placeholder="" data-field="facebook">
         </div>
         <div class="form-group">
@@ -188,7 +190,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
           <input type="text" id="f-direccion" data-field="direccion">
         </div>
         <div class="form-group full">
-          <label><span class="field-dot" id="dot-sitio_web"></span>Sitio web</label>
+          <label><span class="field-dot" id="dot-sitio_web"></span>Sitio web <a id="link-sitio_web" href="#" target="_blank" class="link-icon" style="display:none">↗</a></label>
           <input type="text" id="f-sitio_web" data-field="sitio_web">
         </div>
         <div class="form-group">
@@ -341,6 +343,18 @@ function updateDot(field, val, isDirty){
   dot.className='field-dot '+(isDirty?'dot-dirty':(val&&val.trim()?'dot-filled':'dot-empty'));
 }
 
+function updateLinks(){
+  const sw=document.getElementById('f-sitio_web').value.trim();
+  const ig=document.getElementById('f-instagram').value.trim();
+  const fb=document.getElementById('f-facebook').value.trim();
+  const lsw=document.getElementById('link-sitio_web');
+  if(sw){lsw.href=sw.startsWith('http')?sw:'https://'+sw;lsw.style.display='';}else{lsw.style.display='none';}
+  const lig=document.getElementById('link-instagram');
+  if(ig){lig.href='https://instagram.com/'+ig.replace('@','');lig.style.display='';}else{lig.style.display='none';}
+  const lfb=document.getElementById('link-facebook');
+  if(fb){lfb.href=fb.startsWith('http')?fb:'https://facebook.com/'+fb;lfb.style.display='';}else{lfb.style.display='none';}
+}
+
 function onFieldChange(e){
   const field=e.target.dataset.field;
   if(!field)return;
@@ -357,6 +371,7 @@ function onFieldChange(e){
   const hasDirty=dirtyFields.size>0;
   document.getElementById('save-banner').style.display=hasDirty?'flex':'none';
   document.getElementById('btn-save').textContent=hasDirty?`Guardar (${dirtyFields.size} cambio${dirtyFields.size>1?'s':''})` :'Guardar cambios';
+  if(['sitio_web','instagram','facebook'].includes(field)) updateLinks();
 }
 
 function selectLead(id){
@@ -391,6 +406,7 @@ function selectLead(id){
   document.getElementById('save-msg').textContent='';
   document.getElementById('save-err').textContent='';
   document.getElementById('btn-save').textContent='Guardar cambios';
+  updateLinks();
 }
 
 function resetForm(){
