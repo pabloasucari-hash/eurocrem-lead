@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eurocrem — Leads</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#f0f2f5;color:#1a1a1a;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* NAV */
+#topnav{background:#1e2a3a;color:#fff;padding:0 16px;display:flex;align-items:center;gap:0;min-height:44px;flex-shrink:0}
+#topnav h1{font-size:15px;font-weight:600;margin-right:24px;color:#fff}
+.nav-tab{padding:0 16px;height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;color:#8fa3b8;border-bottom:2px solid transparent;transition:color .15s}
+.nav-tab:hover{color:#c8d8e8}
+.nav-tab.active{color:#fff;border-bottom-color:#4c9be8}
+#save-banner{margin-left:auto;display:none;align-items:center;gap:8px;background:#e67e22;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:500}
+#save-banner button{background:#fff;color:#e67e22;border:none;padding:3px 10px;border-radius:4px;font-size:12px;cursor:pointer;font-weight:600}
+
+/* SCREENS */
+#screen-leads{display:flex;flex:1;overflow:hidden}
+#screen-dashboard{display:none;flex:1;overflow-y:auto;padding:24px}
+
+/* SIDEBAR */
+#sidebar{width:300px;min-width:240px;background:#fff;border-right:1px solid #e0e0e0;display:flex;flex-direction:column}
+#sidebar-header{padding:12px;border-bottom:1px solid #eee}
+#search{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;margin-bottom:8px}
+.filter-row{display:flex;gap:6px}
+.filter-row select{flex:1;padding:5px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#fff}
+#lead-count{font-size:11px;color:#999;margin-top:7px}
+#lead-list{flex:1;overflow-y:auto}
+.lead-item{padding:9px 12px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+.lead-item:hover{background:#f8f9fa}
+.lead-item.active{background:#e8f0fe;border-left:3px solid #4285f4}
+.lead-item.modified{border-left:3px solid #e67e22}
+.lead-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lead-sub{display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;align-items:center}
+.lead-barrio{font-size:11px;color:#aaa;margin-right:2px}
+.badge{font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600}
+.bwa{background:#e6f4ea;color:#1e7e34}
+.bemail{background:#e8f0fe;color:#1a56db}
+.big{background:#fce4ec;color:#b71c1c}
+.bnone{background:#f5f5f5;color:#bbb}
+.bmod{background:#fff3cd;color:#856404}
+
+/* DETAIL */
+#detail{flex:1;overflow-y:auto;padding:20px 28px}
+#detail-placeholder{display:flex;align-items:center;justify-content:center;height:100%;color:#ccc;font-size:15px}
+#detail-form{display:none;max-width:700px}
+.lead-header{margin-bottom:20px}
+.lead-header h2{font-size:20px;font-weight:600;margin-bottom:2px}
+.lead-header .meta{font-size:13px;color:#888}
+.section-label{font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.6px;grid-column:1/-1;padding-top:14px;margin-top:4px;border-top:1px solid #eee}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.full{grid-column:1/-1}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:5px}
+.field-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.dot-filled{background:#27ae60}
+.dot-empty{background:#ddd}
+.dot-dirty{background:#e67e22}
+
+/* Field states */
+.form-group input, .form-group select, .form-group textarea{
+  padding:8px 10px;border-radius:6px;font-size:13px;font-family:inherit;transition:border-color .15s,background .15s
+}
+/* empty field */
+.form-group input.empty, .form-group textarea.empty{
+  border:1px solid #e8e8e8;background:#fafafa;color:#aaa
+}
+/* filled field */
+.form-group input.filled, .form-group textarea.filled{
+  border:1px solid #b0bec5;background:#fff;color:#1a1a1a;font-weight:500
+}
+/* dirty (modified not saved) */
+.form-group input.dirty, .form-group textarea.dirty{
+  border:1.5px solid #e67e22;background:#fffbf5;color:#1a1a1a;font-weight:500
+}
+.form-group select{border:1px solid #ddd;background:#fff;color:#1a1a1a}
+.form-group input:focus,.form-group textarea:focus{outline:none;border-color:#4285f4;box-shadow:0 0 0 2px rgba(66,133,244,.12)}
+.form-group textarea{resize:vertical;min-height:68px}
+.readonly-field{padding:8px 0;font-size:13px;color:#555;border-bottom:1px solid #f0f0f0}
+
+/* Actions */
+.actions{display:flex;gap:10px;margin-top:20px;align-items:center;padding-bottom:40px}
+#btn-save{padding:9px 22px;background:#4285f4;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer}
+#btn-save:hover{background:#3367d6}
+#btn-save:disabled{background:#ccc;cursor:not-allowed}
+#btn-reset{padding:9px 16px;background:#fff;color:#888;border:1px solid #ddd;border-radius:6px;font-size:13px;cursor:pointer}
+#btn-reset:hover{background:#f5f5f5}
+#save-msg{font-size:13px;color:#27ae60;font-weight:500}
+#save-err{font-size:13px;color:#c0392b}
+
+/* DASHBOARD */
+#screen-dashboard h2{font-size:18px;font-weight:600;margin-bottom:20px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+.stat-card{background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:14px 16px}
+.stat-label{font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-val{font-size:28px;font-weight:600;color:#1a1a1a}
+.stat-sub{font-size:12px;color:#aaa;margin-top:2px}
+.dash-table{background:#fff;border:1px solid #e8e8e8;border-radius:10px;overflow:hidden}
+.dash-table table{width:100%;border-collapse:collapse}
+.dash-table th{text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #eee;background:#fafafa}
+.dash-table td{padding:10px 14px;border-bottom:1px solid #f5f5f5;font-size:13px}
+.dash-table tr:last-child td{border-bottom:none}
+.dash-table tr:hover td{background:#f9f9f9}
+.pct-bar{height:6px;border-radius:3px;background:#e8e8e8;margin-top:3px;overflow:hidden}
+.pct-fill{height:100%;border-radius:3px;background:#4285f4}
+</style>
+</head>
+<body>
+
+<div id="topnav">
+  <h1>🥩 Eurocrem</h1>
+  <div class="nav-tab active" onclick="showScreen('leads')">Leads</div>
+  <div class="nav-tab" onclick="showScreen('dashboard')">Dashboard</div>
+  <div id="save-banner">
+    <span>⚠ Cambios sin guardar</span>
+    <button onclick="saveLead()">Guardar</button>
+  </div>
+</div>
+
+<div id="screen-leads">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <input type="text" id="search" placeholder="Buscar restaurante...">
+      <div class="filter-row">
+        <select id="filter-barrio"><option value="">Todos los barrios</option></select>
+        <select id="filter-status">
+          <option value="">Todos</option>
+          <option value="wa">Con WA</option>
+          <option value="email">Con email</option>
+          <option value="ambos">Con ambos</option>
+          <option value="ninguno">Sin contacto</option>
+          <option value="mod">Modificados</option>
+        </select>
+      </div>
+      <div id="lead-count">Cargando...</div>
+    </div>
+    <div id="lead-list"></div>
+  </div>
+  <div id="detail">
+    <div id="detail-placeholder">← Seleccioná un restaurante</div>
+    <div id="detail-form">
+      <div class="lead-header">
+        <h2 id="f-titulo"></h2>
+        <div class="meta" id="f-meta"></div>
+      </div>
+      <div class="form-grid">
+        <div class="section-label">Contacto</div>
+        <div class="form-group">
+          <label><span class="field-dot" id="dot-whatsapp"></span>WhatsApp</label>
+          <input type="text" id="f-whatsapp" placeholder="+54 9 11 XXXX-XXXX" data-field="whatsapp">
+        </div>
+        <div class="form-group">
+          <label><span class="field-dot" id="dot-email"></span>Email</label>
+          <input type="text" id="f-email" placeholder="contacto@restaurante.com" data-field="email">
+        </div>
+        <div class="form-group">
+          <label><span class="field-dot" id="dot-email_2"></span>Email 2</label>
+          <input type="text" id="f-email_2" placeholder="" data-field="email_2">
+        </div>
+        <div class="form-group">
+          <label><span class="field-dot" id="dot-instagram"></span>Instagram</label>
+          <input type="text" id="f-instagram" placeholder="@handle" data-field="instagram">
+        </div>
+        <div class="form-group">
+          <label><span class="field-dot" id="dot-facebook"></span>Facebook</label>
+          <input type="text" id="f-facebook" placeholder="" data-field="facebook">
+        </div>
+        <div class="form-group">
+          <label><span class="field-dot" id="dot-link_wame"></span>Link WA</label>
+          <input type="text" id="f-link_wame" placeholder="https://wa.me/..." data-field="link_wame">
+        </div>
+
+        <div class="section-label">Negocio</div>
+        <div class="form-group">
+          <label><span class="field-dot" id="dot-nombre"></span>Nombre</label>
+          <input type="text" id="f-nombre" data-field="nombre">
+        </div>
+        <div class="form-group">
+          <label><span class="field-dot" id="dot-barrio"></span>Barrio</label>
+          <input type="text" id="f-barrio" data-field="barrio">
+        </div>
+        <div class="form-group full">
+          <label><span class="field-dot" id="dot-direccion"></span>Dirección</label>
+          <input type="text" id="f-direccion" data-field="direccion">
+        </div>
+        <div class="form-group full">
+          <label><span class="field-dot" id="dot-sitio_web"></span>Sitio web</label>
+          <input type="text" id="f-sitio_web" data-field="sitio_web">
+        </div>
+        <div class="form-group">
+          <label><span class="field-dot" id="dot-telefono"></span>Teléfono</label>
+          <input type="text" id="f-telefono" data-field="telefono">
+        </div>
+        <div class="form-group">
+          <label>Precio</label>
+          <input type="text" id="f-precio" data-field="precio">
+        </div>
+        <div class="form-group">
+          <label>Fit</label>
+          <select id="f-fit" data-field="fit">
+            <option value="Alto">Alto</option>
+            <option value="Medio">Medio</option>
+            <option value="Bajo">Bajo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Origen contacto</label>
+          <input type="text" id="f-origen" readonly style="border:1px solid #eee;background:#f9f9f9;color:#aaa">
+        </div>
+
+        <div class="section-label">Google Maps</div>
+        <div class="form-group">
+          <label>Nota</label>
+          <div class="readonly-field" id="f-nota"></div>
+        </div>
+        <div class="form-group">
+          <label>Enriquecido (Apify)</label>
+          <div class="readonly-field" id="f-enriquecido"></div>
+        </div>
+
+        <div class="section-label">Notas internas</div>
+        <div class="form-group full">
+          <label><span class="field-dot" id="dot-notas"></span>Notas</label>
+          <textarea id="f-notas" data-field="notas"></textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="btn-save" onclick="saveLead()">Guardar cambios</button>
+        <button id="btn-reset" onclick="resetForm()">Descartar</button>
+        <span id="save-msg"></span>
+        <span id="save-err"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="screen-dashboard">
+  <h2>Resumen por barrio</h2>
+  <div class="stats-grid" id="global-stats"></div>
+  <div class="dash-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Barrio</th>
+          <th>Total</th>
+          <th>Con WA</th>
+          <th>Con email</th>
+          <th>Con ambos</th>
+          <th>Sin contacto</th>
+          <th>Cobertura</th>
+        </tr>
+      </thead>
+      <tbody id="dash-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://crbmgsmmvfkbxrplqfkl.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyYm1nc21tdmZrYnhycGxxZmtsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDUxNjQ0NywiZXhwIjoyMDk2MDkyNDQ3fQ.7D5od9xbpGP3XbdjrTpgCtL7xWYpeJ6xaa5cBsMsju8';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let allLeads=[], currentId=null, originalValues={}, dirtyFields=new Set(), modifiedIds=new Set();
+
+const EDITABLE_FIELDS=['whatsapp','email','email_2','instagram','facebook','link_wame','nombre','barrio','direccion','sitio_web','telefono','precio','notas'];
+
+function showScreen(s){
+  document.getElementById('screen-leads').style.display=s==='leads'?'flex':'none';
+  document.getElementById('screen-dashboard').style.display=s==='dashboard'?'flex':'none';
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&s==='leads')||(i===1&&s==='dashboard')));
+  if(s==='dashboard') buildDashboard();
+}
+
+async function loadLeads(){
+  const {data,error}=await sb.from('leads')
+    .select('id,nombre,barrio,whatsapp,email,email_2,instagram,facebook,link_wame,sitio_web,telefono,direccion,precio,fit,origen_contacto,enriquecido,google_nota,google_resenas,horarios,notas')
+    .order('barrio').order('nombre');
+  if(error){document.getElementById('lead-count').textContent='Error';return;}
+  allLeads=data;
+  populateBarrioFilter();
+  renderList();
+}
+
+function populateBarrioFilter(){
+  const sel=document.getElementById('filter-barrio');
+  [...new Set(allLeads.map(l=>l.barrio).filter(Boolean))].sort().forEach(b=>{
+    const o=document.createElement('option');o.value=b;o.textContent=b;sel.appendChild(o);
+  });
+}
+
+function getFiltered(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const barrio=document.getElementById('filter-barrio').value;
+  const status=document.getElementById('filter-status').value;
+  return allLeads.filter(l=>{
+    if(q&&!l.nombre.toLowerCase().includes(q))return false;
+    if(barrio&&l.barrio!==barrio)return false;
+    if(status==='wa'&&!l.whatsapp)return false;
+    if(status==='email'&&!l.email)return false;
+    if(status==='ambos'&&(!l.whatsapp||!l.email))return false;
+    if(status==='ninguno'&&(l.whatsapp||l.email))return false;
+    if(status==='mod'&&!modifiedIds.has(l.id))return false;
+    return true;
+  });
+}
+
+function renderList(){
+  const leads=getFiltered();
+  const list=document.getElementById('lead-list');
+  document.getElementById('lead-count').textContent=`${leads.length} de ${allLeads.length} restaurantes`;
+  list.innerHTML='';
+  leads.forEach(l=>{
+    const div=document.createElement('div');
+    const isActive=l.id===currentId, isMod=modifiedIds.has(l.id);
+    div.className='lead-item'+(isActive?' active':'')+(isMod&&!isActive?' modified':'');
+    div.dataset.id=l.id;
+    const badges=[];
+    if(l.whatsapp)badges.push('<span class="badge bwa">WA</span>');
+    if(l.email)badges.push('<span class="badge bemail">Email</span>');
+    if(l.instagram)badges.push('<span class="badge big">IG</span>');
+    if(isMod)badges.push('<span class="badge bmod">Modificado</span>');
+    if(!l.whatsapp&&!l.email&&!isMod)badges.push('<span class="badge bnone">Sin contacto</span>');
+    div.innerHTML=`<div class="lead-name">${l.nombre}</div><div class="lead-sub"><span class="lead-barrio">${l.barrio||''}</span>${badges.join('')}</div>`;
+    div.addEventListener('click',()=>selectLead(l.id));
+    list.appendChild(div);
+  });
+}
+
+function getFieldClass(val, isDirty){
+  if(isDirty) return 'dirty';
+  return (val&&val.toString().trim()) ? 'filled' : 'empty';
+}
+
+function updateDot(field, val, isDirty){
+  const dot=document.getElementById('dot-'+field);
+  if(!dot)return;
+  dot.className='field-dot '+(isDirty?'dot-dirty':(val&&val.trim()?'dot-filled':'dot-empty'));
+}
+
+function onFieldChange(e){
+  const field=e.target.dataset.field;
+  if(!field)return;
+  const val=e.target.value;
+  const orig=originalValues[field]||'';
+  const changed=val.trim()!==orig.trim();
+  if(changed){
+    dirtyFields.add(field);
+  } else {
+    dirtyFields.delete(field);
+  }
+  e.target.className=getFieldClass(val, dirtyFields.has(field));
+  updateDot(field, val, dirtyFields.has(field));
+  const hasDirty=dirtyFields.size>0;
+  document.getElementById('save-banner').style.display=hasDirty?'flex':'none';
+  document.getElementById('btn-save').textContent=hasDirty?`Guardar (${dirtyFields.size} cambio${dirtyFields.size>1?'s':''})` :'Guardar cambios';
+}
+
+function selectLead(id){
+  if(dirtyFields.size>0){
+    if(!confirm('Tenés cambios sin guardar. ¿Descartarlos?'))return;
+  }
+  dirtyFields.clear();
+  document.getElementById('save-banner').style.display='none';
+  currentId=id;
+  const l=allLeads.find(x=>x.id===id);
+  if(!l)return;
+  document.querySelectorAll('.lead-item').forEach(el=>el.classList.toggle('active',el.dataset.id===id));
+  document.getElementById('detail-placeholder').style.display='none';
+  document.getElementById('detail-form').style.display='block';
+  document.getElementById('f-titulo').textContent=l.nombre;
+  document.getElementById('f-meta').textContent=[l.barrio,l.direccion].filter(Boolean).join(' — ');
+
+  originalValues={};
+  EDITABLE_FIELDS.forEach(f=>{
+    const el=document.getElementById('f-'+f);
+    if(!el)return;
+    const val=l[f]||'';
+    originalValues[f]=val;
+    el.value=val;
+    el.className=getFieldClass(val, false);
+    updateDot(f, val, false);
+  });
+  document.getElementById('f-fit').value=l.fit||'Medio';
+  document.getElementById('f-origen').value=l.origen_contacto||'';
+  document.getElementById('f-nota').textContent=l.google_nota?`${l.google_nota} ⭐ (${l.google_resenas||0} reseñas)`:'—';
+  document.getElementById('f-enriquecido').textContent=l.enriquecido?'✓ Sí':'No';
+  document.getElementById('save-msg').textContent='';
+  document.getElementById('save-err').textContent='';
+  document.getElementById('btn-save').textContent='Guardar cambios';
+}
+
+function resetForm(){
+  if(!currentId)return;
+  dirtyFields.clear();
+  selectLead(currentId);
+}
+
+async function saveLead(){
+  if(!currentId)return;
+  const btn=document.getElementById('btn-save');
+  btn.disabled=true;
+  document.getElementById('save-msg').textContent='';
+  document.getElementById('save-err').textContent='';
+  const payload={};
+  EDITABLE_FIELDS.forEach(f=>{
+    const el=document.getElementById('f-'+f);
+    if(el)payload[f]=el.value.trim()||null;
+  });
+  payload.fit=document.getElementById('f-fit').value;
+
+  // Nota de modificacion manual
+  const ts=new Date().toLocaleDateString('es-AR');
+  if(!payload.notas||!payload.notas.includes('[mod:')) {
+    payload.notas=(payload.notas?payload.notas+'\n':'')+'[mod: '+ts+']';
+  }
+
+  const {error}=await sb.from('leads').update(payload).eq('id',currentId);
+  btn.disabled=false;
+  btn.textContent='Guardar cambios';
+  if(error){
+    document.getElementById('save-err').textContent='Error: '+error.message;
+  } else {
+    const idx=allLeads.findIndex(x=>x.id===currentId);
+    if(idx>=0)Object.assign(allLeads[idx],payload);
+    modifiedIds.add(currentId);
+    dirtyFields.clear();
+    document.getElementById('save-banner').style.display='none';
+    originalValues=Object.fromEntries(EDITABLE_FIELDS.map(f=>[f,payload[f]||'']));
+    EDITABLE_FIELDS.forEach(f=>{
+      const el=document.getElementById('f-'+f);
+      if(el){el.className=getFieldClass(el.value,false);updateDot(f,el.value,false);}
+    });
+    document.getElementById('save-msg').textContent='✓ Guardado';
+    document.getElementById('f-notas').value=payload.notas||'';
+    renderList();
+    setTimeout(()=>{document.getElementById('save-msg').textContent='';},3000);
+  }
+}
+
+function buildDashboard(){
+  const barrios={};
+  let totWa=0,totEmail=0,totAmbos=0,totNinguno=0;
+  allLeads.forEach(l=>{
+    const b=l.barrio||'(sin barrio)';
+    if(!barrios[b])barrios[b]={total:0,wa:0,email:0,ambos:0,ninguno:0};
+    barrios[b].total++;
+    if(l.whatsapp)barrios[b].wa++;
+    if(l.email)barrios[b].email++;
+    if(l.whatsapp&&l.email)barrios[b].ambos++;
+    if(!l.whatsapp&&!l.email)barrios[b].ninguno++;
+    if(l.whatsapp)totWa++;
+    if(l.email)totEmail++;
+    if(l.whatsapp&&l.email)totAmbos++;
+    if(!l.whatsapp&&!l.email)totNinguno++;
+  });
+
+  document.getElementById('global-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total leads</div><div class="stat-val">${allLeads.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Con WhatsApp</div><div class="stat-val" style="color:#1e7e34">${totWa}</div><div class="stat-sub">${Math.round(totWa/allLeads.length*100)}% del total</div></div>
+    <div class="stat-card"><div class="stat-label">Con email</div><div class="stat-val" style="color:#1a56db">${totEmail}</div><div class="stat-sub">${Math.round(totEmail/allLeads.length*100)}% del total</div></div>
+    <div class="stat-card"><div class="stat-label">Sin contacto</div><div class="stat-val" style="color:#c0392b">${totNinguno}</div><div class="stat-sub">${Math.round(totNinguno/allLeads.length*100)}% del total</div></div>
+  `;
+
+  const sorted=Object.entries(barrios).sort((a,b)=>b[1].total-a[1].total);
+  document.getElementById('dash-tbody').innerHTML=sorted.map(([b,s])=>{
+    const cob=Math.round((s.wa+s.email-s.ambos)/s.total*100);
+    return `<tr>
+      <td><strong>${b}</strong></td>
+      <td>${s.total}</td>
+      <td style="color:#1e7e34">${s.wa}</td>
+      <td style="color:#1a56db">${s.email}</td>
+      <td style="color:#6f42c1">${s.ambos}</td>
+      <td style="color:#c0392b">${s.ninguno}</td>
+      <td style="min-width:80px">${cob}%<div class="pct-bar"><div class="pct-fill" style="width:${cob}%"></div></div></td>
+    </tr>`;
+  }).join('');
+}
+
+document.querySelectorAll('[data-field]').forEach(el=>el.addEventListener('input',onFieldChange));
+document.getElementById('search').addEventListener('input',renderList);
+document.getElementById('filter-barrio').addEventListener('change',renderList);
+document.getElementById('filter-status').addEventListener('change',renderList);
+
+loadLeads();
+</script>
+</body>
+</html>
