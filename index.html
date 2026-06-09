@@ -13,11 +13,11 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#f0f2f5;color:#1a1a1a;display:flex;flex-direction:column;height:100vh;overflow:hidden;color-scheme:light}
 
 /* NAV */
-##topnav{background:#1e2a3a!important;color:#fff!important;padding:0 16px;display:flex;align-items:center;gap:0;min-height:44px;flex-shrink:0}
-#topnav h1{font-size:15px;font-weight:600;margin-right:24px;color:#fff!important}
-.nav-tab{padding:0 16px;height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;color:#8fa3b8;border-bottom:2px solid transparent;transition:color .15s}
+##topnav{background-color:#1e2a3a;color:#fff;padding:0 16px;display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:0;min-height:44px;flex-shrink:0;width:100%}
+#topnav h1{font-size:15px;font-weight:600;margin-right:24px;color:#fff;white-space:nowrap}
+.nav-tab{padding:0 16px;height:44px;display:inline-flex;align-items:center;cursor:pointer;font-size:13px;color:#8fa3b8;border-bottom:2px solid transparent;transition:color .15s;white-space:nowrap;flex-shrink:0}
 .nav-tab:hover{color:#c8d8e8}
-.nav-tab.active{color:#fff!important;border-bottom-color:#4c9be8}
+.nav-tab.active{color:#fff;border-bottom-color:#4c9be8}
 #save-banner{margin-left:auto;display:none;align-items:center;gap:8px;background:#e67e22;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:500}
 #save-banner button{background:#fff;color:#e67e22;border:none;padding:3px 10px;border-radius:4px;font-size:12px;cursor:pointer;font-weight:600}
 
@@ -76,7 +76,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .form-group input:focus,.form-group textarea:focus{outline:none;border-color:#4285f4;box-shadow:0 0 0 2px rgba(66,133,244,.12)}
 .form-group textarea{resize:vertical;min-height:42px}
 .readonly-field{padding:4px 0;font-size:12px;color:#555;border-bottom:1px solid #f0f0f0}
-.link-icon{font-size:11px;color:#4285f4;text-decoration:none;margin-left:5px;opacity:.7}
+.link-icon{font-size:16px;color:#4285f4;text-decoration:none;margin-left:5px;opacity:.8;line-height:1}
 .link-icon:hover{opacity:1}
 /* FOTO */
 #f-photo{width:100%;height:160px;object-fit:cover;display:none;flex-shrink:0;background:#f0f0f0}
@@ -191,7 +191,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       <div class="form-grid">
         <div class="section-label">Contacto</div>
         <div class="form-group">
-          <label><span class="field-dot" id="dot-whatsapp"></span>WhatsApp</label>
+          <label><span class="field-dot" id="dot-whatsapp"></span>WhatsApp <a id="link-whatsapp" href="#" target="_blank" class="link-icon" style="display:none">↗</a></label>
           <input type="text" id="f-whatsapp" placeholder="+54 9 11 XXXX-XXXX" data-field="whatsapp">
         </div>
         <div class="form-group">
@@ -511,12 +511,20 @@ function updateLinks(){
   const sw=document.getElementById('f-sitio_web').value.trim();
   const ig=document.getElementById('f-instagram').value.trim();
   const fb=document.getElementById('f-facebook').value.trim();
+  const wa=document.getElementById('f-whatsapp').value.trim();
+  const wame=document.getElementById('f-link_wame').value.trim();
   const lsw=document.getElementById('link-sitio_web');
   if(sw){lsw.href=sw.startsWith('http')?sw:'https://'+sw;lsw.style.display='';}else lsw.style.display='none';
   const lig=document.getElementById('link-instagram');
   if(ig){lig.href='https://instagram.com/'+ig.replace('@','');lig.style.display='';}else lig.style.display='none';
   const lfb=document.getElementById('link-facebook');
   if(fb){lfb.href=fb.startsWith('http')?fb:'https://facebook.com/'+fb;lfb.style.display='';}else lfb.style.display='none';
+  // flechita WA: usa link_wame si existe, sino construye desde número
+  const lwa=document.getElementById('link-whatsapp');
+  if(lwa){
+    const waUrl=wame||(wa?'https://wa.me/'+wa.replace(/\D/g,''):null);
+    if(waUrl){lwa.href=waUrl;lwa.style.display='';}else lwa.style.display='none';
+  }
 }
 function onFieldChange(e){
   const field=e.target.dataset.field;
@@ -530,7 +538,7 @@ function onFieldChange(e){
   const hasDirty=dirtyFields.size>0;
   document.getElementById('save-banner').style.display=hasDirty?'flex':'none';
   document.getElementById('btn-save').textContent=hasDirty?`Guardar (${dirtyFields.size} cambio${dirtyFields.size>1?'s':''})`:'Guardar cambios';
-  if(['sitio_web','instagram','facebook'].includes(field)) updateLinks();
+  if(['sitio_web','instagram','facebook','whatsapp','link_wame'].includes(field)) updateLinks();
 }
 
 // ── FILL DETAIL ───────────────────────────────────────────────────────────────
@@ -726,6 +734,7 @@ async function saveLead(){
     if(payload.enriquecido!==undefined) document.getElementById('f-enriquecido').textContent=payload.enriquecido?'✓ Sí':'No';
     document.getElementById('save-msg').textContent='✓ Guardado';
     document.getElementById('f-notas').value=payload.notas||'';
+    updateLinks();
     renderList();
     setTimeout(()=>{document.getElementById('save-msg').textContent='';},3000);
   }
