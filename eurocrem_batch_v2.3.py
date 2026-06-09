@@ -187,10 +187,13 @@ def capturar_leads():
                 log.info(f"  Excluido por tipo: {lugar.get('name')} {tipos}")
                 continue
 
-            # Filtrar resultados fuera de Argentina
+            # Filtrar: solo CABA (Capital Federal)
             addr_check = lugar.get("formatted_address", "")
-            if "Argentina" not in addr_check:
-                log.info(f"  Excluido (fuera de Argentina): {lugar.get('name')} — {addr_check}")
+            es_caba = ("Cdad. Autónoma de Buenos Aires" in addr_check or
+                       "Ciudad Autónoma de Buenos Aires" in addr_check or
+                       "C.A.B.A" in addr_check)
+            if not es_caba:
+                log.info(f"  Excluido (fuera de CABA): {lugar.get('name')} — {addr_check}")
                 continue
 
             # Obtener detalle completo
