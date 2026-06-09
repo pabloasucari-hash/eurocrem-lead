@@ -20,7 +20,7 @@ set /p MSG="Descripcion del cambio: "
 git commit -m "%MSG%"
 
 rem Ahora traer cambios remotos y pushear
-git pull origin main --rebase
+git pull origin main --rebase --autostash
 git push origin main
 
 echo.
