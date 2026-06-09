@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Eurocrem — Leads</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -47,6 +48,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .big{background:#fce4ec;color:#b71c1c}
 .bnone{background:#f5f5f5;color:#bbb}
 .bmod{background:#fff3cd;color:#856404}
+.bcli{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
 
 /* DETAIL */
 #detail{flex:1;overflow-y:auto;padding:10px 16px;min-width:0}
@@ -172,6 +174,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
           <option value="no">Sin coordenadas</option>
         </select>
       </div>
+      <div class="filter-row">
+        <select id="filter-cliente">
+          <option value="">Todos (cliente/prospecto)</option>
+          <option value="S">✅ Clientes Eurocrem</option>
+          <option value="N">🆕 Prospectos nuevos</option>
+        </select>
+        <button onclick="exportXLSX()" style="flex-shrink:0;padding:5px 8px;background:#217346;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">⬇ Excel</button>
+      </div>
       <div id="lead-count">Cargando...</div>
     </div>
     <div id="lead-list" tabindex="0"></div>
@@ -207,11 +217,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
           <label><span class="field-dot" id="dot-facebook"></span>Facebook <a id="link-facebook" href="#" target="_blank" class="link-icon" style="display:none">↗</a></label>
           <input type="text" id="f-facebook" placeholder="" data-field="facebook">
         </div>
-        <div class="form-group">
-          <label><span class="field-dot" id="dot-link_wame"></span>Link WA</label>
-          <input type="text" id="f-link_wame" placeholder="https://wa.me/..." data-field="link_wame">
-        </div>
-
         <div class="section-label">Negocio</div>
         <div class="form-group">
           <label><span class="field-dot" id="dot-nombre"></span>Nombre</label>
@@ -243,6 +248,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
             <option value="Alto">Alto</option>
             <option value="Medio">Medio</option>
             <option value="Bajo">Bajo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label><span class="field-dot" id="dot-cliente_eurocrem"></span>Cliente Eurocrem</label>
+          <select id="f-cliente_eurocrem" data-field="cliente_eurocrem">
+            <option value="N">N — Prospecto nuevo</option>
+            <option value="S">S — Ya es cliente</option>
           </select>
         </div>
         <div class="form-group">
@@ -319,7 +331,7 @@ let mapInstance=null, markerSelected=null, markersOthers=[];
 let hoverTimer=null;
 const PLACES_KEY='AIzaSyDj8Q--Sn63RiYOp3ZF93Hp6P4BH51K49M';
 
-const EDITABLE_FIELDS=['whatsapp','email','email_2','instagram','facebook','link_wame','nombre','barrio','direccion','sitio_web','telefono','precio','notas'];
+const EDITABLE_FIELDS=['whatsapp','email','email_2','instagram','facebook','nombre','barrio','direccion','sitio_web','telefono','precio','notas','cliente_eurocrem'];
 
 // ── TIPO DE COCINA ────────────────────────────────────────────────────────────
 function getTipo(nombre){
@@ -412,7 +424,7 @@ function showScreen(s){
 // ── LOAD ──────────────────────────────────────────────────────────────────────
 async function loadLeads(){
   const {data,error}=await sb.from('leads')
-    .select('id,nombre,barrio,whatsapp,email,email_2,instagram,facebook,link_wame,sitio_web,telefono,direccion,precio,fit,origen_contacto,enriquecido,google_nota,google_resenas,horarios,notas,lat,lng,photo_ref')
+    .select('id,nombre,barrio,whatsapp,email,email_2,instagram,facebook,link_wame,sitio_web,telefono,direccion,precio,fit,origen_contacto,enriquecido,google_nota,google_resenas,horarios,notas,lat,lng,photo_ref,cliente_eurocrem')
     .order('barrio').order('nombre');
   if(error){document.getElementById('lead-count').textContent='Error al cargar';return;}
   allLeads=data;
@@ -446,6 +458,8 @@ function getFiltered(){
     if(status==='mod'&&!modifiedIds.has(l.id)) return false;
     if(coords==='si'&&(!l.lat||!l.lng)) return false;
     if(coords==='no'&&l.lat&&l.lng) return false;
+    const cli=document.getElementById('filter-cliente').value;
+    if(cli&&l.cliente_eurocrem!==cli) return false;
     return true;
   });
 }
@@ -465,6 +479,7 @@ function renderList(){
     if(l.whatsapp) badges.push('<span class="badge bwa">WA</span>');
     if(l.email) badges.push('<span class="badge bemail">Email</span>');
     if(l.instagram) badges.push('<span class="badge big">IG</span>');
+    if(l.cliente_eurocrem==='S') badges.push('<span class="badge bcli">Cliente</span>');
     if(isMod) badges.push('<span class="badge bmod">Modificado</span>');
     if(!l.whatsapp&&!l.email&&!isMod) badges.push('<span class="badge bnone">Sin contacto</span>');
     div.innerHTML=`
@@ -562,6 +577,7 @@ function fillDetail(l, isPreview){
     updateDot(f, val, !isPreview&&dirtyFields.has(f));
   });
   document.getElementById('f-fit').value=l.fit||'Medio';
+  document.getElementById('f-cliente_eurocrem').value=l.cliente_eurocrem||'N';
   document.getElementById('f-origen').value=l.origen_contacto||'';
   document.getElementById('f-nota').textContent=l.google_nota?`${l.google_nota} ⭐ (${l.google_resenas||0} reseñas)`:'—';
   document.getElementById('f-enriquecido').textContent=l.enriquecido?'✓ Sí':'No';
@@ -624,6 +640,7 @@ function previewTextOnly(id){
     updateDot(f,val,false);
   });
   document.getElementById('f-fit').value=l.fit||'Medio';
+  document.getElementById('f-cliente_eurocrem').value=l.cliente_eurocrem||'N';
   document.getElementById('f-origen').value=l.origen_contacto||'';
   document.getElementById('f-nota').textContent=l.google_nota?`${l.google_nota} ⭐ (${l.google_resenas||0} reseñas)`:'—';
   document.getElementById('f-enriquecido').textContent=l.enriquecido?'✓ Sí':'No';
@@ -692,6 +709,7 @@ async function saveLead(){
     if(el) payload[f]=el.value.trim()||null;
   });
   payload.fit=document.getElementById('f-fit').value;
+  payload.cliente_eurocrem=document.getElementById('f-cliente_eurocrem').value||'N';
   const ts=new Date().toLocaleDateString('es-AR');
   if(!payload.notas||!payload.notas.includes('[mod:'))
     payload.notas=(payload.notas?payload.notas+'\n':'')+'[mod: '+ts+']';
@@ -760,6 +778,7 @@ document.getElementById('filter-barrio').addEventListener('change',renderList);
 document.getElementById('filter-tipo').addEventListener('change',renderList);
 document.getElementById('filter-status').addEventListener('change',renderList);
 document.getElementById('filter-coords').addEventListener('change',renderList);
+document.getElementById('filter-cliente').addEventListener('change',renderList);
 
 // ── TECLADO: flechas navegan la lista ─────────────────────────────────────────
 document.getElementById('lead-list').addEventListener('keydown', e=>{
@@ -773,6 +792,58 @@ document.getElementById('lead-list').addEventListener('keydown', e=>{
   else next=filtered[idx-1]||filtered[filtered.length-1];
   if(next) selectLead(next.id);
 });
+
+// ── EXPORT XLSX ───────────────────────────────────────────────────────────────
+function exportXLSX(){
+  const leads=getFiltered();
+  if(!leads.length){ alert('No hay leads con los filtros actuales.'); return; }
+
+  // Construir nombre del archivo con filtros activos
+  const parts=['leads'];
+  const barrio=document.getElementById('filter-barrio').value;
+  const status=document.getElementById('filter-status').value;
+  const cli=document.getElementById('filter-cliente').value;
+  const q=document.getElementById('search').value.trim();
+  if(barrio) parts.push(barrio.replace(/\s+/g,'-'));
+  if(status) parts.push(status);
+  if(cli==='S') parts.push('clientes');
+  else if(cli==='N') parts.push('prospectos');
+  if(q) parts.push(q.replace(/\s+/g,'-'));
+  const fecha=new Date().toISOString().slice(0,10);
+  parts.push(fecha);
+  const filename=parts.join('_')+'.xlsx';
+
+  // Columnas a exportar
+  const rows=leads.map(l=>({
+    'Nombre':          l.nombre||'',
+    'Barrio':          l.barrio||'',
+    'Dirección':       l.direccion||'',
+    'WhatsApp':        l.whatsapp||'',
+    'Email':           l.email||'',
+    'Email 2':         l.email_2||'',
+    'Instagram':       l.instagram||'',
+    'Facebook':        l.facebook||'',
+    'Teléfono':        l.telefono||'',
+    'Sitio web':       l.sitio_web||'',
+    'Nota Google':     l.google_nota||'',
+    'Reseñas Google':  l.google_resenas||'',
+    'Precio':          l.precio||'',
+    'Fit':             l.fit||'',
+    'Cliente Eurocrem':l.cliente_eurocrem||'N',
+    'Origen contacto': l.origen_contacto||'',
+    'Notas':           l.notas||'',
+  }));
+
+  const ws=XLSX.utils.json_to_sheet(rows);
+  // Ancho de columnas
+  ws['!cols']=[
+    {wch:35},{wch:14},{wch:45},{wch:18},{wch:30},{wch:25},{wch:18},{wch:18},
+    {wch:15},{wch:30},{wch:8},{wch:10},{wch:8},{wch:8},{wch:12},{wch:18},{wch:40}
+  ];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Leads');
+  XLSX.writeFile(wb, filename);
+}
 
 loadLeads();
 </script>
