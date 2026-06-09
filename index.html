@@ -188,7 +188,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       <div class="form-grid">
         <div class="section-label">Contacto</div>
         <div class="form-group">
-          <label><span class="field-dot" id="dot-whatsapp"></span>WhatsApp</label>
+          <label><span class="field-dot" id="dot-whatsapp"></span>WhatsApp <a id="link-whatsapp" href="#" target="_blank" class="link-icon" style="display:none;color:#25D366;font-size:13px">💬</a></label>
           <input type="text" id="f-whatsapp" placeholder="+54 9 11 XXXX-XXXX" data-field="whatsapp">
         </div>
         <div class="form-group">
@@ -507,12 +507,15 @@ function updateLinks(){
   const sw=document.getElementById('f-sitio_web').value.trim();
   const ig=document.getElementById('f-instagram').value.trim();
   const fb=document.getElementById('f-facebook').value.trim();
+  const wa=document.getElementById('f-whatsapp').value.trim();
   const lsw=document.getElementById('link-sitio_web');
   if(sw){lsw.href=sw.startsWith('http')?sw:'https://'+sw;lsw.style.display='';}else lsw.style.display='none';
   const lig=document.getElementById('link-instagram');
   if(ig){lig.href='https://instagram.com/'+ig.replace('@','');lig.style.display='';}else lig.style.display='none';
   const lfb=document.getElementById('link-facebook');
   if(fb){lfb.href=fb.startsWith('http')?fb:'https://facebook.com/'+fb;lfb.style.display='';}else lfb.style.display='none';
+  const lwa=document.getElementById('link-whatsapp');
+  if(wa){const num=wa.replace(/\D/g,'');lwa.href='https://wa.me/'+num;lwa.style.display='';}else lwa.style.display='none';
 }
 function onFieldChange(e){
   const field=e.target.dataset.field;
@@ -526,7 +529,7 @@ function onFieldChange(e){
   const hasDirty=dirtyFields.size>0;
   document.getElementById('save-banner').style.display=hasDirty?'flex':'none';
   document.getElementById('btn-save').textContent=hasDirty?`Guardar (${dirtyFields.size} cambio${dirtyFields.size>1?'s':''})`:'Guardar cambios';
-  if(['sitio_web','instagram','facebook'].includes(field)) updateLinks();
+  if(['sitio_web','instagram','facebook','whatsapp'].includes(field)) updateLinks();
 }
 
 // ── FILL DETAIL (compartido entre select y preview) ───────────────────────────
