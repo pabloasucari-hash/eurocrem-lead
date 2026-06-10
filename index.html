@@ -363,18 +363,34 @@ Si querés conocer nuestro catálogo o recibir una cotización sin compromiso, c
 🌐 www.eurocrem.com.ar
 
 ¡Esperamos poder ser tu proveedor de helados!</textarea>
-    <label>Email de prueba (para verificar antes de enviar)</label>
-    <input id="em-test-addr" value="pabloasucari@gmail.com">
   </div>
 
   <div class="email-card">
-    <h3>Envío</h3>
-    <p style="font-size:13px;color:#555;margin-bottom:14px">
-      Destinatarios: <strong id="em-count">cargando...</strong> leads con email.
-    </p>
-    <button class="btn-test" onclick="sendTest()">📨 Enviar prueba</button>
-    <button class="btn-send" id="btn-send-all" onclick="sendAll()">🚀 Enviar a todos</button>
-    <div id="email-log">Listo para enviar.</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="em-test-addr" value="pabloasucari@gmail.com" style="width:190px">
+        <button class="btn-test" onclick="sendTest()">📨 Prueba</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="em-sel-count" style="font-size:12px;color:#666">0 seleccionados</span>
+        <button class="btn-send" id="btn-send-sel" onclick="sendSelected()">🚀 Enviar seleccionados</button>
+      </div>
+    </div>
+    <div id="email-log" style="margin-bottom:10px">Seleccioná destinatarios y enviá.</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:#f0f2f5;text-align:left">
+            <th style="padding:7px 8px;width:36px;text-align:center"><input type="checkbox" id="em-chk-all" onchange="toggleAllEmail(this.checked)"></th>
+            <th style="padding:7px 8px">Restaurante</th>
+            <th style="padding:7px 8px">Barrio</th>
+            <th style="padding:7px 8px">Email</th>
+            <th style="padding:7px 8px;text-align:center">Enviado</th>
+          </tr>
+        </thead>
+        <tbody id="em-tbody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -483,7 +499,7 @@ function showScreen(s){
 // ── LOAD ──────────────────────────────────────────────────────────────────────
 async function loadLeads(){
   const {data,error}=await sb.from('leads')
-    .select('id,nombre,barrio,whatsapp,email,email_2,instagram,facebook,link_wame,sitio_web,telefono,direccion,precio,fit,origen_contacto,enriquecido,google_nota,google_resenas,horarios,notas,lat,lng,photo_ref,cliente_eurocrem')
+    .select('id,nombre,barrio,whatsapp,email,email_2,instagram,facebook,link_wame,sitio_web,telefono,direccion,precio,fit,origen_contacto,enriquecido,google_nota,google_resenas,horarios,notas,lat,lng,photo_ref,cliente_eurocrem,email_enviado_at')
     .order('barrio').order('nombre');
   if(error){document.getElementById('lead-count').textContent='Error al cargar';return;}
   allLeads=data;
@@ -919,9 +935,42 @@ function bodyToHtml(text){
     '</div>';
 }
 
+function fmtDate(iso){
+  if(!iso) return '';
+  const d=new Date(iso);
+  return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+}
+
 function initEmailScreen(){
-  const withEmail=allLeads.filter(l=>l.email&&l.email.trim());
-  document.getElementById('em-count').textContent=withEmail.length;
+  const leads=allLeads.filter(l=>l.email&&l.email.trim());
+  const tbody=document.getElementById('em-tbody');
+  tbody.innerHTML='';
+  leads.forEach(l=>{
+    const sent=l.email_enviado_at;
+    const tr=document.createElement('tr');
+    tr.style.borderBottom='1px solid #f0f0f0';
+    const td1=document.createElement('td');td1.style.cssText='padding:6px 8px;text-align:center';
+    const chk=document.createElement('input');chk.type='checkbox';chk.className='em-chk';chk.dataset.id=l.id;
+    chk.checked=!sent;chk.addEventListener('change',updateSelCount);
+    td1.appendChild(chk);
+    const td2=document.createElement('td');td2.style.cssText='padding:6px 8px;font-weight:500';td2.textContent=l.nombre||'';
+    const td3=document.createElement('td');td3.style.cssText='padding:6px 8px;color:#666;font-size:12px';td3.textContent=l.barrio||'';
+    const td4=document.createElement('td');td4.style.cssText='padding:6px 8px;font-size:12px';td4.textContent=l.email;
+    const td5=document.createElement('td');td5.style.cssText='padding:6px 8px;text-align:center;font-size:12px';td5.id='em-sent-'+l.id;td5.textContent=sent?'✅ '+fmtDate(sent):'';
+    tr.append(td1,td2,td3,td4,td5);
+    tbody.appendChild(tr);
+  });
+  updateSelCount();
+}
+
+function updateSelCount(){
+  const n=document.querySelectorAll('.em-chk:checked').length;
+  document.getElementById('em-sel-count').textContent=n+' seleccionados';
+}
+
+function toggleAllEmail(checked){
+  document.querySelectorAll('.em-chk').forEach(c=>c.checked=checked);
+  updateSelCount();
 }
 
 async function brevoSend(toEmail, toName){
@@ -949,26 +998,37 @@ async function sendTest(){
   }catch(e){emailLog('❌ Error: '+e.message);}
 }
 
-async function sendAll(){
-  const withEmail=allLeads.filter(l=>l.email&&l.email.trim());
-  if(!confirm(`¿Enviar a ${withEmail.length} restaurantes? Esta acción no se puede deshacer.`)) return;
-  const btn=document.getElementById('btn-send-all');
+async function sendSelected(){
+  const checked=[...document.querySelectorAll('.em-chk:checked')];
+  if(!checked.length){alert('Seleccioná al menos un destinatario');return;}
+  if(!confirm('¿Enviar a '+checked.length+' restaurantes?')) return;
+  const btn=document.getElementById('btn-send-sel');
   btn.disabled=true;
-  document.getElementById('email-log').textContent=`Iniciando envío a ${withEmail.length} destinatarios...\n`;
-  let ok=0, fail=0;
-  for(let i=0;i<withEmail.length;i++){
-    const l=withEmail[i];
+  const log=document.getElementById('email-log');
+  log.textContent='Enviando a '+checked.length+' destinatarios...\n';
+  let ok=0,fail=0;
+  const now=new Date().toISOString();
+  for(let i=0;i<checked.length;i++){
+    const id=checked[i].dataset.id;
+    const l=allLeads.find(x=>x.id===id);
+    if(!l) continue;
     try{
-      await brevoSend(l.email.trim(), l.nombre||'');
+      await brevoSend(l.email.trim(),l.nombre||'');
+      await sb.from('leads').update({email_enviado_at:now}).eq('id',id);
+      l.email_enviado_at=now;
+      const cell=document.getElementById('em-sent-'+id);
+      if(cell) cell.textContent='✅ '+fmtDate(now);
+      checked[i].checked=false;
       ok++;
-      if(ok%10===0||i===withEmail.length-1) emailLog(`✅ ${ok}/${withEmail.length} enviados`);
+      if(ok%5===0||i===checked.length-1) log.textContent+='✅ '+ok+'/'+checked.length+' enviados\n';
     }catch(e){
       fail++;
-      emailLog(`❌ ${l.nombre} (${l.email}): ${e.message}`);
+      log.textContent+='❌ '+(l.nombre||l.email)+': '+e.message+'\n';
     }
-    if(i<withEmail.length-1) await new Promise(r=>setTimeout(r,350));
+    if(i<checked.length-1) await new Promise(r=>setTimeout(r,350));
   }
-  emailLog(`\n🏁 Listo. ${ok} enviados, ${fail} errores.`);
+  log.textContent+='\n🏁 Listo. '+ok+' enviados, '+fail+' errores.';
+  updateSelCount();
   btn.disabled=false;
 }
 
