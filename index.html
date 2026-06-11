@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="Eurocrem">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -97,6 +97,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .readonly-field{padding:4px 0;font-size:12px;color:#555;border-bottom:1px solid #f0f0f0}
 .link-icon{font-size:11px;color:#4285f4;text-decoration:none;margin-left:5px;opacity:.7}
 .link-icon:hover{opacity:1}
+/* NOTAS INTERNAS */
+.notas-date{font-size:10px;color:#aaa;margin-top:2px;font-style:italic}
 /* FOTO */
 #f-photo{width:100%;height:160px;object-fit:cover;display:none;flex-shrink:0;background:#f0f0f0}
 /* PREVIEW MODE */
@@ -292,9 +294,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 
         <div class="section-label">Notas internas</div>
         <div class="form-group full">
-          <label><span class="field-dot" id="dot-notas"></span>Notas</label>
-          <textarea id="f-notas" data-field="notas"></textarea>
+          <label><span class="field-dot" id="dot-notas_internas"></span>Notas</label>
+          <textarea id="f-notas_internas" data-field="notas_internas" placeholder="Anotaciones internas del equipo..."></textarea>
+          <div class="notas-date" id="notas-internas-date"></div>
         </div>
+        <!-- Campo notas legacy — oculto -->
+        <div style="display:none"><textarea id="f-notas"></textarea></div>
       </div>
       <div class="actions">
         <button id="btn-save" onclick="saveLead()">Guardar cambios</button>
@@ -376,6 +381,13 @@ Si querés conocer nuestro catálogo o recibir una cotización sin compromiso, c
         <button class="btn-send" id="btn-send-sel" onclick="sendSelected()">🚀 Enviar seleccionados</button>
       </div>
     </div>
+    <!-- Filtros email -->
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <input type="text" id="em-search" placeholder="Buscar restaurante..." style="flex:1;min-width:140px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      <select id="em-filter-barrio" style="flex:1;min-width:120px;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#fff">
+        <option value="">Todos los barrios</option>
+      </select>
+    </div>
     <div id="email-log" style="margin-bottom:10px">Seleccioná destinatarios y enviá.</div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:13px">
@@ -404,7 +416,7 @@ let mapInstance=null, markerSelected=null, markersOthers=[];
 let hoverTimer=null;
 const PLACES_KEY='AIzaSyDj8Q--Sn63RiYOp3ZF93Hp6P4BH51K49M';
 
-const EDITABLE_FIELDS=['whatsapp','email','email_2','instagram','facebook','nombre','barrio','direccion','sitio_web','telefono','precio','notas','cliente_eurocrem'];
+const EDITABLE_FIELDS=['whatsapp','email','email_2','instagram','facebook','nombre','barrio','direccion','sitio_web','telefono','precio','notas_internas','cliente_eurocrem'];
 
 // ── TIPO DE COCINA ────────────────────────────────────────────────────────────
 function getTipo(nombre){
@@ -499,7 +511,7 @@ function showScreen(s){
 // ── LOAD ──────────────────────────────────────────────────────────────────────
 async function loadLeads(){
   const {data,error}=await sb.from('leads')
-    .select('id,nombre,barrio,whatsapp,email,email_2,instagram,facebook,link_wame,sitio_web,telefono,direccion,precio,fit,origen_contacto,enriquecido,google_nota,google_resenas,horarios,notas,lat,lng,photo_ref,cliente_eurocrem,email_enviado_at')
+    .select('id,nombre,barrio,whatsapp,email,email_2,instagram,facebook,link_wame,sitio_web,telefono,direccion,precio,fit,origen_contacto,enriquecido,google_nota,google_resenas,horarios,notas,notas_internas,notas_internas_at,lat,lng,photo_ref,cliente_eurocrem,email_enviado_at')
     .order('barrio').order('nombre');
   if(error){document.getElementById('lead-count').textContent='Error al cargar';return;}
   allLeads=data;
@@ -508,9 +520,12 @@ async function loadLeads(){
 }
 
 function populateBarrioFilter(){
-  const sel=document.getElementById('filter-barrio');
-  [...new Set(allLeads.map(l=>l.barrio).filter(Boolean))].sort().forEach(b=>{
-    const o=document.createElement('option');o.value=b;o.textContent=b;sel.appendChild(o);
+  const barrios=[...new Set(allLeads.map(l=>l.barrio).filter(Boolean))].sort();
+  barrios.forEach(b=>{
+    const o=document.createElement('option');o.value=b;o.textContent=b;
+    document.getElementById('filter-barrio').appendChild(o);
+    const o2=document.createElement('option');o2.value=b;o2.textContent=b;
+    document.getElementById('em-filter-barrio').appendChild(o2);
   });
 }
 
@@ -622,6 +637,13 @@ function onFieldChange(e){
   if(['sitio_web','instagram','facebook','whatsapp'].includes(field)) updateLinks();
 }
 
+// ── NOTAS INTERNAS DATE ───────────────────────────────────────────────────────
+function fmtNotasIntDate(iso){
+  if(!iso) return '';
+  const d=new Date(iso);
+  return 'Última modificación: '+d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
 // ── FILL DETAIL (compartido entre select y preview) ───────────────────────────
 function fillDetail(l, isPreview){
   const form=document.getElementById('detail-form');
@@ -656,6 +678,7 @@ function fillDetail(l, isPreview){
   document.getElementById('f-origen').value=l.origen_contacto||'';
   document.getElementById('f-nota').textContent=l.google_nota?`${l.google_nota} ⭐ (${l.google_resenas||0} reseñas)`:'—';
   document.getElementById('f-enriquecido').textContent=l.enriquecido?'✓ Sí':'No';
+  document.getElementById('notas-internas-date').textContent=fmtNotasIntDate(l.notas_internas_at);
   updateLinks();
   updateMap(l);
 }
@@ -719,6 +742,7 @@ function previewTextOnly(id){
   document.getElementById('f-origen').value=l.origen_contacto||'';
   document.getElementById('f-nota').textContent=l.google_nota?`${l.google_nota} ⭐ (${l.google_resenas||0} reseñas)`:'—';
   document.getElementById('f-enriquecido').textContent=l.enriquecido?'✓ Sí':'No';
+  document.getElementById('notas-internas-date').textContent=fmtNotasIntDate(l.notas_internas_at);
   updateLinks();
   moveRedPin(l);
 }
@@ -785,9 +809,10 @@ async function saveLead(){
   });
   payload.fit=document.getElementById('f-fit').value;
   payload.cliente_eurocrem=document.getElementById('f-cliente_eurocrem').value||'N';
-  const ts=new Date().toLocaleDateString('es-AR');
-  if(!payload.notas||!payload.notas.includes('[mod:'))
-    payload.notas=(payload.notas?payload.notas+'\n':'')+'[mod: '+ts+']';
+  // Actualizar timestamp de notas_internas solo si fue modificado
+  if(dirtyFields.has('notas_internas')){
+    payload.notas_internas_at=new Date().toISOString();
+  }
   const {error}=await sb.from('leads').update(payload).eq('id',currentId);
   btn.disabled=false;
   btn.textContent='Guardar cambios';
@@ -805,7 +830,11 @@ async function saveLead(){
       if(el){el.className=getFieldClass(el.value,false);updateDot(f,el.value,false);}
     });
     document.getElementById('save-msg').textContent='✓ Guardado';
-    document.getElementById('f-notas').value=payload.notas||'';
+    if(payload.notas_internas_at){
+      const idx2=allLeads.findIndex(x=>x.id===currentId);
+      if(idx2>=0) allLeads[idx2].notas_internas_at=payload.notas_internas_at;
+      document.getElementById('notas-internas-date').textContent=fmtNotasIntDate(payload.notas_internas_at);
+    }
     renderList();
     setTimeout(()=>{document.getElementById('save-msg').textContent='';},3000);
   }
@@ -869,11 +898,11 @@ document.getElementById('lead-list').addEventListener('keydown', e=>{
 });
 
 // ── EXPORT XLSX ───────────────────────────────────────────────────────────────
-function exportXLSX(){
+async function exportXLSX(){
   const leads=getFiltered();
   if(!leads.length){ alert('No hay leads con los filtros actuales.'); return; }
 
-  // Construir nombre del archivo con filtros activos
+  // Nombre del archivo
   const parts=['leads'];
   const barrio=document.getElementById('filter-barrio').value;
   const status=document.getElementById('filter-status').value;
@@ -884,40 +913,95 @@ function exportXLSX(){
   if(cli==='S') parts.push('clientes');
   else if(cli==='N') parts.push('prospectos');
   if(q) parts.push(q.replace(/\s+/g,'-'));
-  const fecha=new Date().toISOString().slice(0,10);
-  parts.push(fecha);
+  parts.push(new Date().toISOString().slice(0,10));
   const filename=parts.join('_')+'.xlsx';
 
-  // Columnas a exportar
-  const rows=leads.map(l=>({
-    'Nombre':          l.nombre||'',
-    'Barrio':          l.barrio||'',
-    'Dirección':       l.direccion||'',
-    'WhatsApp':        l.whatsapp||'',
-    'Email':           l.email||'',
-    'Email 2':         l.email_2||'',
-    'Instagram':       l.instagram||'',
-    'Facebook':        l.facebook||'',
-    'Teléfono':        l.telefono||'',
-    'Sitio web':       l.sitio_web||'',
-    'Nota Google':     l.google_nota||'',
-    'Reseñas Google':  l.google_resenas||'',
-    'Precio':          l.precio||'',
-    'Fit':             l.fit||'',
-    'Cliente Eurocrem':l.cliente_eurocrem||'N',
-    'Origen contacto': l.origen_contacto||'',
-    'Notas':           l.notas||'',
-  }));
+  const wb=new ExcelJS.Workbook();
+  wb.creator='Eurocrem';
+  const ws=wb.addWorksheet('Leads',{
+    views:[{state:'frozen',xSplit:0,ySplit:1}]
+  });
 
-  const ws=XLSX.utils.json_to_sheet(rows);
-  // Ancho de columnas
-  ws['!cols']=[
-    {wch:35},{wch:14},{wch:45},{wch:18},{wch:30},{wch:25},{wch:18},{wch:18},
-    {wch:15},{wch:30},{wch:8},{wch:10},{wch:8},{wch:8},{wch:12},{wch:18},{wch:40}
+  // Definir columnas con ancho
+  ws.columns=[
+    {header:'Nombre',           key:'nombre',         width:38},
+    {header:'WhatsApp',         key:'whatsapp',       width:20},
+    {header:'Teléfono',         key:'telefono',       width:16},
+    {header:'Dirección',        key:'direccion',      width:46},
+    {header:'Email',            key:'email',          width:32},
+    {header:'Email 2',          key:'email_2',        width:28},
+    {header:'Instagram',        key:'instagram',      width:20},
+    {header:'Facebook',         key:'facebook',       width:20},
+    {header:'Sitio web',        key:'sitio_web',      width:30},
+    {header:'Barrio',           key:'barrio',         width:16},
+    {header:'Nota Google',      key:'google_nota',    width:10},
+    {header:'Reseñas',          key:'google_resenas', width:10},
+    {header:'Precio',           key:'precio',         width:10},
+    {header:'Fit',              key:'fit',            width:10},
+    {header:'Cliente Eurocrem', key:'cliente',        width:14},
+    {header:'Origen contacto',  key:'origen',         width:20},
+    {header:'Notas internas',   key:'notas_internas', width:42},
   ];
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Leads');
-  XLSX.writeFile(wb, filename);
+
+  // Estilar fila de encabezado
+  const hdrRow=ws.getRow(1);
+  hdrRow.height=22;
+  hdrRow.eachCell(cell=>{
+    cell.font={bold:true,color:{argb:'FFFFFFFF'},size:10,name:'Calibri'};
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E2A3A'}};
+    cell.alignment={vertical:'middle',horizontal:'center'};
+    cell.border={bottom:{style:'medium',color:{argb:'FF4C9BE8'}}};
+  });
+
+  // Activar autofiltro
+  ws.autoFilter={from:{row:1,column:1},to:{row:1,column:ws.columns.length}};
+
+  // Agregar datos
+  leads.forEach((l,i)=>{
+    const row=ws.addRow({
+      nombre:       l.nombre||'',
+      whatsapp:     l.whatsapp||'',
+      telefono:     l.telefono||'',
+      direccion:    l.direccion||'',
+      email:        l.email||'',
+      email_2:      l.email_2||'',
+      instagram:    l.instagram||'',
+      facebook:     l.facebook||'',
+      sitio_web:    l.sitio_web||'',
+      barrio:       l.barrio||'',
+      google_nota:  l.google_nota||'',
+      google_resenas: l.google_resenas||'',
+      precio:       l.precio||'',
+      fit:          l.fit||'',
+      cliente:      l.cliente_eurocrem||'N',
+      origen:       l.origen_contacto||'',
+      notas_internas: l.notas_internas||'',
+    });
+    row.height=16;
+    const fillColor=i%2===0?'FFFAFAFA':'FFFFFFFF';
+    row.eachCell({includeEmpty:true},cell=>{
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:fillColor}};
+      cell.border={bottom:{style:'thin',color:{argb:'FFEEEEEE'}}};
+      cell.alignment={vertical:'middle'};
+    });
+    // Email en azul si tiene valor
+    if(l.email){const c=row.getCell('email');c.font={color:{argb:'FF1A56DB'}};}
+    if(l.email_2){const c=row.getCell('email_2');c.font={color:{argb:'FF1A56DB'}};}
+    // WA en verde
+    if(l.whatsapp){const c=row.getCell('whatsapp');c.font={color:{argb:'FF1E7E34'}};}
+    // Cliente badge
+    if(l.cliente_eurocrem==='S'){
+      const c=row.getCell('cliente');
+      c.font={bold:true,color:{argb:'FF2E7D32'}};
+    }
+  });
+
+  // Descargar
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── EMAIL ─────────────────────────────────────────────────────────────────────
@@ -941,8 +1025,37 @@ function fmtDate(iso){
   return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
 }
 
-function initEmailScreen(){
-  const leads=allLeads.filter(l=>l.email&&l.email.trim());
+const LS_EM_SUBJECT='eurocrem_em_subject';
+const LS_EM_BODY='eurocrem_em_body';
+
+function saveEmailDraft(){
+  try{
+    localStorage.setItem(LS_EM_SUBJECT,document.getElementById('em-subject').value);
+    localStorage.setItem(LS_EM_BODY,document.getElementById('em-body').value);
+  }catch(e){}
+}
+function loadEmailDraft(){
+  try{
+    const s=localStorage.getItem(LS_EM_SUBJECT);
+    const b=localStorage.getItem(LS_EM_BODY);
+    if(s) document.getElementById('em-subject').value=s;
+    if(b) document.getElementById('em-body').value=b;
+  }catch(e){}
+}
+
+function getEmailFiltered(){
+  const q=norm(document.getElementById('em-search').value||'');
+  const barrio=document.getElementById('em-filter-barrio').value;
+  return allLeads.filter(l=>{
+    if(!l.email||!l.email.trim()) return false;
+    if(q&&!norm(l.nombre||'').includes(q)) return false;
+    if(barrio&&l.barrio!==barrio) return false;
+    return true;
+  });
+}
+
+function renderEmailTable(){
+  const leads=getEmailFiltered();
   const tbody=document.getElementById('em-tbody');
   tbody.innerHTML='';
   leads.forEach(l=>{
@@ -957,10 +1070,18 @@ function initEmailScreen(){
     const td3=document.createElement('td');td3.style.cssText='padding:6px 8px;color:#666;font-size:12px';td3.textContent=l.barrio||'';
     const td4=document.createElement('td');td4.style.cssText='padding:6px 8px;font-size:12px';td4.textContent=l.email;
     const td5=document.createElement('td');td5.style.cssText='padding:6px 8px;text-align:center;font-size:12px';td5.id='em-sent-'+l.id;td5.textContent=sent?'✅ '+fmtDate(sent):'';
-    tr.append(td1,td2,td3,td4,td5);
-    tbody.appendChild(tr);
+    tr.append(td1,td2,td3,td4,td5);tbody.appendChild(tr);
   });
   updateSelCount();
+}
+
+function initEmailScreen(){
+  loadEmailDraft();
+  renderEmailTable();
+  document.getElementById('em-subject').oninput=saveEmailDraft;
+  document.getElementById('em-body').oninput=saveEmailDraft;
+  document.getElementById('em-search').oninput=renderEmailTable;
+  document.getElementById('em-filter-barrio').onchange=renderEmailTable;
 }
 
 function updateSelCount(){
