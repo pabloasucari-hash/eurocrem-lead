@@ -1078,10 +1078,20 @@ function renderEmailTable(){
 function initEmailScreen(){
   loadEmailDraft();
   renderEmailTable();
-  document.getElementById('em-subject').oninput=saveEmailDraft;
-  document.getElementById('em-body').oninput=saveEmailDraft;
   document.getElementById('em-search').oninput=renderEmailTable;
   document.getElementById('em-filter-barrio').onchange=renderEmailTable;
+}
+
+// Listeners persistentes para el draft (se registran una sola vez al cargar la página)
+function _initEmailDraftListeners(){
+  loadEmailDraft();
+  ['em-subject','em-body'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){
+      el.addEventListener('input', saveEmailDraft);
+      el.addEventListener('change', saveEmailDraft);
+    }
+  });
 }
 
 function updateSelCount(){
@@ -1154,6 +1164,7 @@ async function sendSelected(){
 }
 
 loadLeads();
+_initEmailDraftListeners();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(()=>{});
