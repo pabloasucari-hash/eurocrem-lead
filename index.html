@@ -75,9 +75,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .lead-header h2{font-size:15px;font-weight:700;margin-bottom:1px;color:#1a1a1a}
 .lead-header .meta{font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .section-label{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.6px;grid-column:1/-1;padding-top:6px;margin-top:2px;border-top:1px solid #eee}
-.form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px 6px}
 .form-grid .full{grid-column:1/-1}
-.form-grid .half{grid-column:span 1}
+.form-grid .span2{grid-column:span 2}
+.form-grid .span3{grid-column:span 3}
 .full{grid-column:1/-1}
 .form-group{display:flex;flex-direction:column;gap:2px}
 .form-group label{font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:4px}
@@ -116,6 +117,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 #save-msg{font-size:13px;color:#27ae60;font-weight:500}
 #save-err{font-size:13px;color:#c0392b}
 
+/* CONTACTOS & ACTIVIDAD */
+.crm-section{margin-top:18px;border-top:1px solid #eee;padding-top:14px}
+.crm-section-title{font-size:11px;font-weight:700;text-transform:uppercase;color:#888;letter-spacing:.5px;margin-bottom:10px}
+.crm-item{display:flex;align-items:baseline;gap:4px;padding:5px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
+.crm-item:last-of-type{border-bottom:none}
+.crm-item-body{min-width:0}
+/* Actividad — tabla compacta */
+#actividad-list{border:2px solid #b0bec5;border-radius:6px;overflow:hidden;max-height:110px;overflow-y:auto;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.act-item{display:flex;align-items:center;gap:5px;padding:4px 8px;border-bottom:1px solid #b0bec5;font-size:12px;background:#fff}
+.act-item:last-of-type{border-bottom:none}
+.act-item:nth-child(even){background:#fafafa}
+.act-arrow{color:#4285f4;flex-shrink:0;font-size:9px}
+.act-texto{flex:1;color:#1a1a1a;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act-fecha{color:#555;font-size:11px;font-weight:500;white-space:nowrap;flex-shrink:0;margin-left:6px}
+.act-item .crm-del{padding:0 3px;font-size:11px;flex-shrink:0;margin-left:2px}
+.act-pending{background:#fffbf5!important;font-style:italic}
+.crm-empty-act{padding:6px 8px;font-size:12px;color:#bbb;font-style:italic}
+.crm-item-main{font-weight:500;color:#1a1a1a}
+.crm-item-sub{font-size:11px;color:#888;margin-top:1px}
+.crm-del{background:none;border:none;cursor:pointer;color:#ccc;font-size:15px;padding:0 2px;line-height:1;flex-shrink:0}
+.crm-del:hover{color:#e53935}
+.crm-add-form{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.crm-add-form input,.crm-add-form textarea{border:1px solid #ddd;border-radius:5px;padding:6px 8px;font-size:12px;font-family:inherit;resize:vertical}
+.crm-add-form textarea{min-height:48px}
+.crm-add-row{display:flex;gap:6px}
+.crm-add-row input{flex:1}
+.crm-btn-add{padding:5px 14px;background:#e67e22;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer}
+.crm-btn-add:hover{background:#3367d6}
+.crm-empty{font-size:12px;color:#bbb;font-style:italic;padding:4px 0}
 /* MAP PANEL */
 #map-panel{width:380px;flex-shrink:0;display:flex;flex-direction:column;border-left:1px solid #e0e0e0;background:#f8f9fa}
 #map-header{padding:10px 14px;background:#fff;border-bottom:1px solid #eee;font-size:12px;font-weight:600;color:#555;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
@@ -246,19 +276,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
         <h2 id="f-titulo"><span id="f-nombre-titulo"></span> <span id="preview-badge" style="font-size:11px;font-weight:400;color:#e67e22;background:#fff8f0;padding:2px 7px;border-radius:4px;vertical-align:middle">Vista previa</span></h2>
         <div class="meta" id="f-meta"></div>
       </div>
+      <!-- GRID PRINCIPAL -->
       <div class="form-grid">
-        <div class="section-label">Contacto</div>
+        <!-- Fila 1: WA | Tel | Email -->
         <div class="form-group">
           <label><span class="field-dot" id="dot-whatsapp"></span>WhatsApp <a id="link-whatsapp" href="#" target="_blank" class="link-icon" style="display:none;color:#25D366;font-size:13px">💬</a></label>
           <input type="text" id="f-whatsapp" placeholder="+54 9 11 XXXX-XXXX" data-field="whatsapp">
         </div>
         <div class="form-group">
+          <label><span class="field-dot" id="dot-telefono"></span>Teléfono</label>
+          <input type="text" id="f-telefono" data-field="telefono">
+        </div>
+        <div class="form-group span2">
           <label><span class="field-dot" id="dot-email"></span>Email</label>
           <input type="text" id="f-email" placeholder="contacto@restaurante.com" data-field="email">
         </div>
-        <div class="form-group">
-          <label><span class="field-dot" id="dot-email_2"></span>Email 2</label>
-          <input type="text" id="f-email_2" placeholder="" data-field="email_2">
+        <!-- Fila 2: Web | Instagram | Facebook -->
+        <div class="form-group span2">
+          <label><span class="field-dot" id="dot-sitio_web"></span>Web <a id="link-sitio_web" href="#" target="_blank" class="link-icon" style="display:none">↗</a></label>
+          <input type="text" id="f-sitio_web" data-field="sitio_web">
         </div>
         <div class="form-group">
           <label><span class="field-dot" id="dot-instagram"></span>Instagram <a id="link-instagram" href="#" target="_blank" class="link-icon" style="display:none">↗</a></label>
@@ -266,29 +302,62 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
         </div>
         <div class="form-group">
           <label><span class="field-dot" id="dot-facebook"></span>Facebook <a id="link-facebook" href="#" target="_blank" class="link-icon" style="display:none">↗</a></label>
-          <input type="text" id="f-facebook" placeholder="" data-field="facebook">
+          <input type="text" id="f-facebook" data-field="facebook">
         </div>
-        <div class="section-label">Negocio</div>
-        <div class="form-group">
-          <label><span class="field-dot" id="dot-nombre"></span>Nombre</label>
-          <input type="text" id="f-nombre" data-field="nombre">
+        <!-- Fila 3: Nombre | Barrio | Dirección -->
+        <div style="grid-column:1/-1;display:flex;gap:6px">
+          <div class="form-group" style="flex:3">
+            <label><span class="field-dot" id="dot-nombre"></span>Nombre</label>
+            <input type="text" id="f-nombre" data-field="nombre">
+          </div>
+          <div class="form-group" style="flex:0 0 auto">
+            <label><span class="field-dot" id="dot-barrio"></span>Barrio</label>
+            <input type="text" id="f-barrio" data-field="barrio" maxlength="15" style="width:110px">
+          </div>
+          <div class="form-group" style="flex:4">
+            <label><span class="field-dot" id="dot-direccion"></span>Dirección</label>
+            <input type="text" id="f-direccion" data-field="direccion">
+          </div>
         </div>
-        <div class="form-group">
-          <label><span class="field-dot" id="dot-barrio"></span>Barrio</label>
-          <input type="text" id="f-barrio" data-field="barrio">
+        <!-- Fila 4: Nombre del Contacto | Notas -->
+        <div style="grid-column:1/-1;display:flex;gap:6px;align-items:flex-start">
+          <div class="form-group" style="flex:2">
+            <label><span class="field-dot" id="dot-contacto"></span>Nombre del Contacto</label>
+            <input type="text" id="f-contacto" placeholder="Nombre — cargo" data-field="contacto" maxlength="45">
+          </div>
+          <div class="form-group" style="flex:3">
+            <label><span class="field-dot" id="dot-notas_internas"></span>Notas</label>
+            <textarea id="f-notas_internas" data-field="notas_internas" placeholder="Notas internas..." rows="2" maxlength="100" style="width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:5px;padding:4px 7px;font-size:12px;font-family:inherit;resize:none;max-height:52px;overflow-y:auto"></textarea>
+          </div>
         </div>
-        <div class="form-group full">
-          <label><span class="field-dot" id="dot-direccion"></span>Dirección</label>
-          <input type="text" id="f-direccion" data-field="direccion">
+      </div>
+
+      <!-- ACTIVIDAD -->
+      <hr style="border:none;border-top:1px solid #555;margin:3px 0">
+      <div class="crm-section" id="section-actividad" style="display:none;margin-top:2px">
+        <div class="crm-section-title">📋 Actividad</div>
+        <div id="actividad-list"></div>
+        <div class="crm-add-form" style="margin-top:4px">
+          <div class="crm-add-row">
+            <input id="ne-nota" placeholder="Qué pasó..." maxlength="200" style="flex:1;min-width:0" />
+            <input id="ne-fecha" type="date" style="width:70px;flex-shrink:0;font-size:11px" />
+            <button class="crm-btn-add" onclick="addEvento()" style="padding:5px 10px">+</button>
+          </div>
         </div>
-        <div class="form-group full">
-          <label><span class="field-dot" id="dot-sitio_web"></span>Sitio web <a id="link-sitio_web" href="#" target="_blank" class="link-icon" style="display:none">↗</a></label>
-          <input type="text" id="f-sitio_web" data-field="sitio_web">
-        </div>
-        <div class="form-group">
-          <label><span class="field-dot" id="dot-telefono"></span>Teléfono</label>
-          <input type="text" id="f-telefono" data-field="telefono">
-        </div>
+      </div>
+
+      <!-- GUARDAR -->
+      <hr style="border:none;border-top:1px solid #555;margin:8px 0">
+      <div class="actions" style="padding:6px 0">
+        <button id="btn-save" onclick="saveLead()">Guardar cambios</button>
+        <button id="btn-reset" onclick="resetForm()">Descartar</button>
+        <span id="save-msg"></span>
+        <span id="save-err"></span>
+      </div>
+      <hr style="border:none;border-top:1px solid #555;margin:8px 0">
+
+      <!-- NEGOCIO: Precio | Fit | Cliente -->
+      <div class="form-grid" style="margin-top:6px;padding-top:0;border-top:none">
         <div class="form-group">
           <label>Precio</label>
           <input type="text" id="f-precio" data-field="precio">
@@ -301,43 +370,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
             <option value="Bajo">Bajo</option>
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group span2">
           <label><span class="field-dot" id="dot-cliente_eurocrem"></span>Cliente Eurocrem</label>
           <select id="f-cliente_eurocrem" data-field="cliente_eurocrem">
             <option value="N">N — Prospecto nuevo</option>
             <option value="S">S — Ya es cliente</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Origen contacto</label>
-          <input type="text" id="f-origen" readonly style="border:1px solid #eee;background:#f9f9f9;color:#aaa">
-        </div>
-
-        <div class="section-label">Google Maps</div>
-        <div class="form-group">
-          <label>Nota</label>
-          <div class="readonly-field" id="f-nota"></div>
-        </div>
-        <div class="form-group">
-          <label>Enriquecido (Apify)</label>
-          <div class="readonly-field" id="f-enriquecido"></div>
-        </div>
-
-        <div class="section-label">Notas internas</div>
-        <div class="form-group full">
-          <label><span class="field-dot" id="dot-notas_internas"></span>Notas</label>
-          <textarea id="f-notas_internas" data-field="notas_internas" placeholder="Anotaciones internas del equipo..."></textarea>
-          <div class="notas-date" id="notas-internas-date"></div>
-        </div>
-        <!-- Campo notas legacy — oculto -->
-        <div style="display:none"><textarea id="f-notas"></textarea></div>
       </div>
-      <div class="actions">
-        <button id="btn-save" onclick="saveLead()">Guardar cambios</button>
-        <button id="btn-reset" onclick="resetForm()">Descartar</button>
-        <span id="save-msg"></span>
-        <span id="save-err"></span>
+
+      <!-- EMAIL 2 + META -->
+      <div class="form-grid" style="margin-top:6px">
+        <div class="form-group span2">
+          <label><span class="field-dot" id="dot-email_2"></span>Email 2</label>
+          <input type="text" id="f-email_2" data-field="email_2">
+        </div>
+        <div style="grid-column:span 2;display:flex;align-items:flex-end;gap:14px;font-size:11px;color:#aaa;padding-bottom:3px">
+          <span>⭐ <span id="f-nota"></span></span>
+          <span>Enriq: <span id="f-enriquecido"></span></span>
+          <span>Origen: <span id="f-origen"></span></span>
+        </div>
       </div>
+
+      <!-- Campo notas legacy — oculto -->
+      <div style="display:none"><textarea id="f-notas"></textarea></div>
+      <!-- Sección contactos legacy — oculta -->
+      <div id="section-contactos" style="display:none"><div id="contactos-list"></div></div>
     </div>
   </div>
 
@@ -442,12 +500,13 @@ const SUPABASE_URL='https://crbmgsmmvfkbxrplqfkl.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyYm1nc21tdmZrYnhycGxxZmtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTY0NDcsImV4cCI6MjA5NjA5MjQ0N30.paXwRRS_Oj6k0RiYHzd7VbKHYM--U_DdfkNm91qN-fg';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let allLeads=[], currentId=null, originalValues={}, dirtyFields=new Set(), modifiedIds=new Set();
+let allLeads=[], currentId=null, currentPlaceId=null, originalValues={}, dirtyFields=new Set(), modifiedIds=new Set();
+let pendingEventos=[], pendingDeleteEventos=[];
 let mapInstance=null, markerSelected=null, markersOthers=[];
 let hoverTimer=null;
 const PLACES_KEY='AIzaSyDj8Q--Sn63RiYOp3ZF93Hp6P4BH51K49M';
 
-const EDITABLE_FIELDS=['whatsapp','email','email_2','instagram','facebook','nombre','barrio','direccion','sitio_web','telefono','precio','notas_internas','cliente_eurocrem'];
+const EDITABLE_FIELDS=['whatsapp','email','email_2','instagram','facebook','nombre','barrio','direccion','sitio_web','telefono','precio','notas_internas','cliente_eurocrem','contacto'];
 
 // ── TIPO DE COCINA ────────────────────────────────────────────────────────────
 function getTipo(nombre){
@@ -542,7 +601,7 @@ function showScreen(s){
 // ── LOAD ──────────────────────────────────────────────────────────────────────
 async function loadLeads(){
   const {data,error}=await sb.from('leads')
-    .select('id,nombre,barrio,whatsapp,email,email_2,instagram,facebook,link_wame,sitio_web,telefono,direccion,precio,fit,origen_contacto,enriquecido,google_nota,google_resenas,horarios,notas,notas_internas,notas_internas_at,lat,lng,photo_ref,cliente_eurocrem,email_enviado_at')
+    .select('id,place_id,nombre,barrio,whatsapp,email,email_2,instagram,facebook,link_wame,sitio_web,telefono,direccion,precio,fit,origen_contacto,enriquecido,google_nota,google_resenas,horarios,notas,notas_internas,notas_internas_at,lat,lng,photo_ref,cliente_eurocrem,email_enviado_at,contacto')
     .order('barrio').order('nombre');
   if(error){document.getElementById('lead-count').textContent='Error al cargar';return;}
   allLeads=data;
@@ -662,9 +721,7 @@ function onFieldChange(e){
   if(changed) dirtyFields.add(field); else dirtyFields.delete(field);
   e.target.className=getFieldClass(val,dirtyFields.has(field));
   updateDot(field,val,dirtyFields.has(field));
-  const hasDirty=dirtyFields.size>0;
-  document.getElementById('save-banner').style.display=hasDirty?'flex':'none';
-  document.getElementById('btn-save').textContent=hasDirty?`Guardar (${dirtyFields.size} cambio${dirtyFields.size>1?'s':''})`:'Guardar cambios';
+  updateSaveBtn();
   if(['sitio_web','instagram','facebook','whatsapp'].includes(field)) updateLinks();
 }
 
@@ -706,10 +763,11 @@ function fillDetail(l, isPreview){
   });
   document.getElementById('f-fit').value=l.fit||'Medio';
   document.getElementById('f-cliente_eurocrem').value=l.cliente_eurocrem||'N';
-  document.getElementById('f-origen').value=l.origen_contacto||'';
+  document.getElementById('f-origen').textContent=l.origen_contacto||'';
   document.getElementById('f-nota').textContent=l.google_nota?`${l.google_nota} ⭐ (${l.google_resenas||0} reseñas)`:'—';
   document.getElementById('f-enriquecido').textContent=l.enriquecido?'✓ Sí':'No';
-  document.getElementById('notas-internas-date').textContent=fmtNotasIntDate(l.notas_internas_at);
+  // notas-internas-date eliminado
+  const cEl=document.getElementById('f-contacto'); if(cEl){ cEl.value=l.contacto||''; updateDot('contacto',l.contacto||'',false); }
   updateLinks();
   updateMap(l);
 }
@@ -770,10 +828,11 @@ function previewTextOnly(id){
   });
   document.getElementById('f-fit').value=l.fit||'Medio';
   document.getElementById('f-cliente_eurocrem').value=l.cliente_eurocrem||'N';
-  document.getElementById('f-origen').value=l.origen_contacto||'';
+  document.getElementById('f-origen').textContent=l.origen_contacto||'';
   document.getElementById('f-nota').textContent=l.google_nota?`${l.google_nota} ⭐ (${l.google_resenas||0} reseñas)`:'—';
   document.getElementById('f-enriquecido').textContent=l.enriquecido?'✓ Sí':'No';
-  document.getElementById('notas-internas-date').textContent=fmtNotasIntDate(l.notas_internas_at);
+  // notas-internas-date eliminado
+  const cEl=document.getElementById('f-contacto'); if(cEl){ cEl.value=l.contacto||''; updateDot('contacto',l.contacto||'',false); }
   updateLinks();
   moveRedPin(l);
 }
@@ -809,8 +868,13 @@ function selectLead(id){
   currentId=id;
   const l=allLeads.find(x=>x.id===id);
   if(!l) return;
+  currentPlaceId=l.place_id;
   document.querySelectorAll('.lead-item').forEach(el=>el.classList.toggle('active',el.dataset.id===id));
+  // Limpiar actividad antes del load async (evita ver datos del lead anterior)
+  document.getElementById('section-actividad').style.display='none';
+  document.getElementById('actividad-list').innerHTML='';
   fillDetail(l, false);
+  loadCRM(l);
   document.getElementById('save-msg').textContent='';
   document.getElementById('save-err').textContent='';
   document.getElementById('btn-save').textContent='Guardar cambios';
@@ -830,6 +894,140 @@ function mobileBack(){
   document.body.classList.remove('mobile-detail');
   const activeItem=document.querySelector('.lead-item.active');
   if(activeItem) setTimeout(()=>activeItem.scrollIntoView({block:'nearest'}),50);
+}
+
+// ── CRM: CONTACTOS & ACTIVIDAD ────────────────────────────────────────────────
+function fmtDateShort(d){
+  if(!d) return '';
+  const dt=new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+async function loadCRM(l){
+  document.getElementById('section-actividad').style.display='block';
+  document.getElementById('ne-fecha').value=new Date().toISOString().slice(0,10);
+  pendingEventos=[]; pendingDeleteEventos=[];
+  // cargar eventos guardados + email enviado
+  const {data:eventos}=await sb.from('lead_eventos')
+    .select('*').eq('place_id',l.place_id).order('fecha',{ascending:false}).order('created_at',{ascending:false});
+  renderActividad(eventos||[], l.email_enviado_at);
+  updateSaveBtn();
+}
+
+function renderContactos(rows){
+  const el=document.getElementById('contactos-list');
+  const addForm=document.getElementById('form-contacto');
+  if(!rows.length){
+    el.innerHTML='<div class="crm-empty">Sin contacto cargado</div>';
+    addForm.style.display='';
+    return;
+  }
+  el.innerHTML=rows.map(r=>`
+    <div class="crm-item">
+      <div class="crm-item-body">
+        <div class="crm-item-main">${esc(r.nombre)}</div>
+        <div class="crm-item-sub">${esc(r.nota||'')}</div>
+      </div>
+      <button class="crm-del" title="Eliminar" onclick="deleteContacto('${r.id}')">✕</button>
+    </div>`).join('');
+  // Máximo 1 contacto — ocultar form si ya hay uno
+  addForm.style.display = rows.length >= 1 ? 'none' : '';
+}
+
+function renderActividad(rows, emailEnviadoAt){
+  const el=document.getElementById('actividad-list');
+  let html='';
+  // Pendientes primero (no guardados aún)
+  html+=pendingEventos.map((r,i)=>`
+    <div class="act-item act-pending">
+      <span class="act-arrow">▸</span>
+      <span class="act-texto">${esc(r.nota)}</span>
+      <span class="act-fecha" style="color:#e67e22">${fmtDateShort(r.fecha)}</span>
+      <button class="crm-del" onclick="removePendingEvento(${i})">✕</button>
+    </div>`).join('');
+  if(emailEnviadoAt){
+    const d=emailEnviadoAt.slice(0,10);
+    html+=`<div class="act-item"><span class="act-arrow">▸</span><span class="act-texto">📧 Email enviado</span><span class="act-fecha">${fmtDateShort(d)}</span></div>`;
+  }
+  // Filtrar los marcados para borrar
+  const visibleRows=rows.filter(r=>!pendingDeleteEventos.includes(r.id));
+  html+=visibleRows.map(r=>`
+    <div class="act-item">
+      <span class="act-arrow">▸</span>
+      <span class="act-texto">${esc(r.nota)}</span>
+      <span class="act-fecha">${fmtDateShort(r.fecha)}</span>
+      <button class="crm-del" onclick="deleteEvento('${r.id}')">✕</button>
+    </div>`).join('');
+  if(!html) html='<div class="crm-empty-act">Sin actividad registrada</div>';
+  el.innerHTML=html;
+}
+
+function esc(s){ return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):''; }
+
+async function addContacto(){
+  if(!currentPlaceId) return;
+  const nombre=document.getElementById('nc-nombre').value.trim();
+  if(!nombre){ alert('El nombre es obligatorio'); return; }
+  const payload={
+    place_id:currentPlaceId,
+    nombre,
+    nota:document.getElementById('nc-nota').value.trim()||null
+  };
+  const {error}=await sb.from('lead_contactos').insert(payload);
+  if(error){ alert('Error: '+error.message); return; }
+  ['nc-nombre','nc-nota'].forEach(id=>document.getElementById(id).value='');
+  const {data}=await sb.from('lead_contactos').select('*').eq('place_id',currentPlaceId).order('created_at');
+  renderContactos(data||[]);
+}
+
+function addEvento(){
+  if(!currentPlaceId) return;
+  const nota=document.getElementById('ne-nota').value.trim();
+  if(!nota){ document.getElementById('ne-nota').focus(); return; }
+  const fecha=document.getElementById('ne-fecha').value||new Date().toISOString().slice(0,10);
+  pendingEventos.unshift({nota, fecha, pending:true});
+  document.getElementById('ne-nota').value='';
+  document.getElementById('ne-fecha').value=new Date().toISOString().slice(0,10);
+  const l=allLeads.find(x=>x.id===currentId);
+  // recargar eventos DB + agregar pendientes al render
+  sb.from('lead_eventos').select('*').eq('place_id',currentPlaceId)
+    .order('fecha',{ascending:false}).order('created_at',{ascending:false})
+    .then(({data})=>renderActividad(data||[], l?l.email_enviado_at:null));
+  updateSaveBtn();
+}
+
+function updateSaveBtn(){
+  const total=dirtyFields.size+pendingEventos.length+pendingDeleteEventos.length;
+  const btn=document.getElementById('btn-save');
+  if(!btn) return;
+  btn.textContent=total>0?`Guardar (${total} cambio${total>1?'s':''})`:'Guardar cambios';
+  document.getElementById('save-banner').style.display=total>0?'flex':'none';
+}
+
+async function deleteContacto(id){
+  if(!confirm('¿Eliminar contacto?')) return;
+  await sb.from('lead_contactos').delete().eq('id',id);
+  const {data}=await sb.from('lead_contactos').select('*').eq('place_id',currentPlaceId).order('created_at');
+  renderContactos(data||[]);
+}
+
+function deleteEvento(id){
+  if(pendingDeleteEventos.includes(id)) return;
+  pendingDeleteEventos.push(id);
+  const l=allLeads.find(x=>x.id===currentId);
+  sb.from('lead_eventos').select('*').eq('place_id',currentPlaceId)
+    .order('fecha',{ascending:false}).order('created_at',{ascending:false})
+    .then(({data})=>renderActividad(data||[], l?l.email_enviado_at:null));
+  updateSaveBtn();
+}
+
+function removePendingEvento(idx){
+  pendingEventos.splice(idx,1);
+  const l=allLeads.find(x=>x.id===currentId);
+  sb.from('lead_eventos').select('*').eq('place_id',currentPlaceId)
+    .order('fecha',{ascending:false}).order('created_at',{ascending:false})
+    .then(({data})=>renderActividad(data||[], l?l.email_enviado_at:null));
+  updateSaveBtn();
 }
 
 function resetForm(){
@@ -872,12 +1070,28 @@ async function saveLead(){
       const el=document.getElementById('f-'+f);
       if(el){el.className=getFieldClass(el.value,false);updateDot(f,el.value,false);}
     });
+    // Borrar eventos marcados para eliminar
+    if(pendingDeleteEventos.length>0 && currentPlaceId){
+      await sb.from('lead_eventos').delete().in('id',pendingDeleteEventos);
+      pendingDeleteEventos=[];
+    }
+    // Guardar eventos pendientes
+    if(pendingEventos.length>0 && currentPlaceId){
+      const rows=pendingEventos.map(e=>({place_id:currentPlaceId,nota:e.nota,fecha:e.fecha}));
+      await sb.from('lead_eventos').insert(rows);
+      pendingEventos=[];
+    }
     document.getElementById('save-msg').textContent='✓ Guardado';
     if(payload.notas_internas_at){
       const idx2=allLeads.findIndex(x=>x.id===currentId);
       if(idx2>=0) allLeads[idx2].notas_internas_at=payload.notas_internas_at;
-      document.getElementById('notas-internas-date').textContent=fmtNotasIntDate(payload.notas_internas_at);
     }
+    // Recargar actividad desde DB
+    const l2=allLeads.find(x=>x.id===currentId);
+    const {data:ev}=await sb.from('lead_eventos').select('*').eq('place_id',currentPlaceId)
+      .order('fecha',{ascending:false}).order('created_at',{ascending:false});
+    renderActividad(ev||[], l2?l2.email_enviado_at:null);
+    updateSaveBtn();
     renderList();
     setTimeout(()=>{document.getElementById('save-msg').textContent='';},3000);
   }
