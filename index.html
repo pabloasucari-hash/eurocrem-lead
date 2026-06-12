@@ -1068,22 +1068,36 @@ function fmtDate(iso){
   return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
 }
 
-const LS_EM_SUBJECT='eurocrem_em_subject';
-const LS_EM_BODY='eurocrem_em_body';
+// ── EMAIL DRAFT — guardado en Supabase tabla config ──────────────────────────
+let _draftSaveTimer=null;
 
-function saveEmailDraft(){
+async function loadEmailDraft(){
   try{
-    localStorage.setItem(LS_EM_SUBJECT,document.getElementById('em-subject').value);
-    localStorage.setItem(LS_EM_BODY,document.getElementById('em-body').value);
-  }catch(e){}
+    const {data}=await sb.from('config')
+      .select('key,value')
+      .in('key',['email_subject','email_body']);
+    if(!data) return;
+    data.forEach(r=>{
+      if(r.key==='email_subject') document.getElementById('em-subject').value=r.value;
+      if(r.key==='email_body')    document.getElementById('em-body').value=r.value;
+    });
+  }catch(e){ console.warn('loadEmailDraft:',e); }
 }
-function loadEmailDraft(){
+
+async function saveEmailDraft(){
   try{
-    const s=localStorage.getItem(LS_EM_SUBJECT);
-    const b=localStorage.getItem(LS_EM_BODY);
-    if(s) document.getElementById('em-subject').value=s;
-    if(b) document.getElementById('em-body').value=b;
-  }catch(e){}
+    const subject=document.getElementById('em-subject').value;
+    const body=document.getElementById('em-body').value;
+    await sb.from('config').upsert([
+      {key:'email_subject', value:subject, updated_at:new Date().toISOString()},
+      {key:'email_body',    value:body,    updated_at:new Date().toISOString()}
+    ],{onConflict:'key'});
+  }catch(e){ console.warn('saveEmailDraft:',e); }
+}
+
+function scheduleSaveDraft(){
+  clearTimeout(_draftSaveTimer);
+  _draftSaveTimer=setTimeout(saveEmailDraft, 1200); // guarda 1.2s después de dejar de escribir
 }
 
 function getEmailFiltered(){
@@ -1119,7 +1133,7 @@ function renderEmailTable(){
 }
 
 function initEmailScreen(){
-  loadEmailDraft();
+  loadEmailDraft(); // async — carga subject/body desde Supabase
   renderEmailTable();
   document.getElementById('em-search').oninput=renderEmailTable;
   document.getElementById('em-filter-barrio').onchange=renderEmailTable;
@@ -1127,12 +1141,11 @@ function initEmailScreen(){
 
 // Listeners persistentes para el draft (se registran una sola vez al cargar la página)
 function _initEmailDraftListeners(){
-  loadEmailDraft();
   ['em-subject','em-body'].forEach(id=>{
     const el=document.getElementById(id);
     if(el){
-      el.addEventListener('input', saveEmailDraft);
-      el.addEventListener('change', saveEmailDraft);
+      el.addEventListener('input', scheduleSaveDraft);
+      el.addEventListener('change', scheduleSaveDraft);
     }
   });
 }
