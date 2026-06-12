@@ -1,11 +1,11 @@
 {
   "name": "Eurocrem Leads",
   "short_name": "Eurocrem",
-  "description": "Pipeline de leads para Eurocrem helados",
+  "description": "Panel de gestión de leads para Eurocrem Helados",
   "start_url": "/eurocrem-lead/",
   "scope": "/eurocrem-lead/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "background_color": "#1e2a3a",
   "theme_color": "#1e2a3a",
   "icons": [

@@ -1,8 +1,14 @@
 const CACHE = 'eurocrem-v1';
-const OFFLINE = ['/eurocrem-lead/', '/eurocrem-lead/index.html'];
+const ASSETS = [
+  '/eurocrem-lead/',
+  '/eurocrem-lead/index.html',
+  '/eurocrem-lead/manifest.json',
+  '/eurocrem-lead/icon-192.png',
+  '/eurocrem-lead/icon-512.png',
+];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
   self.skipWaiting();
 });
 
@@ -13,16 +19,10 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Network first, cache fallback
+// Network first, fallback to cache
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request)
-      .then(r => {
-        const clone = r.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return r;
-      })
-      .catch(() => caches.match(e.request))
+    fetch(e.request).catch(() => caches.match(e.request))
   );
 });
