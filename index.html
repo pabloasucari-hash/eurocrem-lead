@@ -194,6 +194,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 
   /* Botón volver */
   #btn-back-mobile{display:flex!important}
+}
+
+/* PWA standalone — ocultar foto y mapa */
+@media (display-mode: standalone) {
+  #map-panel{display:none!important}
 
   /* Form grid: 2 col en mobile */
   .form-grid{grid-template-columns:1fr 1fr}
