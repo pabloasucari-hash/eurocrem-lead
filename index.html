@@ -245,18 +245,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
         </select>
       </div>
       <div class="filter-row">
-        <select id="filter-status">
-          <option value="">Todos</option>
-          <option value="wa">Con WA</option>
-          <option value="email">Con email</option>
-          <option value="ambos">Con ambos</option>
-          <option value="ninguno">Sin contacto</option>
-          <option value="mod">Modificados</option>
-        </select>
+        <select id="filter-status" style="display:none"></select>
         <select id="filter-coords">
-          <option value="">Con/sin mapa</option>
-          <option value="si">Con coordenadas</option>
-          <option value="no">Sin coordenadas</option>
+          <option value="">Todos</option>
+          <option value="con-email">Con email</option>
+          <option value="con-wa">Con WA</option>
+          <option value="ambos">Con email y WA</option>
         </select>
       </div>
       <div class="filter-row">
@@ -361,40 +355,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       </div>
       <hr style="border:none;border-top:1px solid #555;margin:8px 0">
 
-      <!-- NEGOCIO: Precio | Fit | Cliente -->
-      <div class="form-grid" style="margin-top:6px;padding-top:0;border-top:none">
-        <div class="form-group">
-          <label>Precio</label>
-          <input type="text" id="f-precio" data-field="precio">
-        </div>
-        <div class="form-group">
-          <label>Fit</label>
-          <select id="f-fit" data-field="fit">
-            <option value="Alto">Alto</option>
-            <option value="Medio">Medio</option>
-            <option value="Bajo">Bajo</option>
-          </select>
-        </div>
-        <div class="form-group span2">
-          <label><span class="field-dot" id="dot-cliente_eurocrem"></span>Cliente Eurocrem</label>
-          <select id="f-cliente_eurocrem" data-field="cliente_eurocrem">
-            <option value="N">N — Prospecto nuevo</option>
-            <option value="S">S — Ya es cliente</option>
-          </select>
-        </div>
+      <!-- NEGOCIO: Precio | Fit | Cliente — una sola línea -->
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap">
+        <label style="font-size:11px;color:#888;white-space:nowrap">Precio: <input type="text" id="f-precio" data-field="precio" style="width:60px;font-size:12px;padding:2px 5px;border:1px solid #ddd;border-radius:4px"></label>
+        <label style="font-size:11px;color:#888;white-space:nowrap">Fit: <select id="f-fit" data-field="fit" style="font-size:12px;padding:2px 4px;border:1px solid #ddd;border-radius:4px"><option value="Alto">Alto</option><option value="Medio">Medio</option><option value="Bajo">Bajo</option></select></label>
+        <label style="font-size:11px;color:#888;white-space:nowrap"><span class="field-dot" id="dot-cliente_eurocrem"></span>Cliente Eurocrem: <select id="f-cliente_eurocrem" data-field="cliente_eurocrem" style="font-size:12px;padding:2px 4px;border:1px solid #ddd;border-radius:4px"><option value="N">N — Prospecto nuevo</option><option value="S">S — Ya es cliente</option></select></label>
       </div>
 
-      <!-- EMAIL 2 + META -->
-      <div class="form-grid" style="margin-top:6px">
-        <div class="form-group span2">
-          <label><span class="field-dot" id="dot-email_2"></span>Email 2</label>
-          <input type="text" id="f-email_2" data-field="email_2">
-        </div>
-        <div style="grid-column:span 2;display:flex;align-items:flex-end;gap:14px;font-size:11px;color:#aaa;padding-bottom:3px">
-          <span>⭐ <span id="f-nota"></span></span>
-          <span>Enriq: <span id="f-enriquecido"></span></span>
-          <span>Origen: <span id="f-origen"></span></span>
-        </div>
+      <!-- EMAIL 2 + ⭐ nota + email estado — una sola línea -->
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px;font-size:11px;color:#888;overflow:hidden">
+        <span id="f-enriquecido" style="display:none"></span>
+        <span id="f-origen" style="display:none"></span>
+        <span id="f-nota" style="white-space:nowrap"></span>
+        <span id="f-email-enviado-wrap" style="font-weight:600;white-space:nowrap;flex-shrink:0"><span id="f-email-enviado-at"></span></span>
+        <label style="display:flex;align-items:center;gap:4px;white-space:nowrap;flex:1"><span class="field-dot" id="dot-email_2"></span>Email 2: <input type="text" id="f-email_2" data-field="email_2" style="flex:1;min-width:0;font-size:12px;padding:2px 5px;border:1px solid #ddd;border-radius:4px"></label>
       </div>
 
       <!-- Campo notas legacy — oculto -->
@@ -636,13 +610,14 @@ function getFiltered(){
     if(q&&!norm(l.nombre).includes(q)) return false;
     if(barrio&&l.barrio!==barrio) return false;
     if(tipo&&getTipo(l.nombre)!==tipo) return false;
-    if(status==='wa'&&!l.whatsapp) return false;
-    if(status==='email'&&!l.email) return false;
+    if(status==='solo-email'&&(!l.email||l.whatsapp)) return false;
+    if(status==='solo-wa'&&(!l.whatsapp||l.email)) return false;
     if(status==='ambos'&&(!l.whatsapp||!l.email)) return false;
     if(status==='ninguno'&&(l.whatsapp||l.email)) return false;
     if(status==='mod'&&!modifiedIds.has(l.id)) return false;
-    if(coords==='si'&&(!l.lat||!l.lng)) return false;
-    if(coords==='no'&&l.lat&&l.lng) return false;
+    if(coords==='con-email'&&!l.email) return false;
+    if(coords==='con-wa'&&!l.whatsapp) return false;
+    if(coords==='ambos'&&(!l.email||!l.whatsapp)) return false;
     const cli=document.getElementById('filter-cliente').value;
     if(cli&&l.cliente_eurocrem!==cli) return false;
     return true;
@@ -916,6 +891,10 @@ async function loadCRM(l){
   const {data:eventos}=await sb.from('lead_eventos')
     .select('*').eq('place_id',l.place_id).order('fecha',{ascending:false}).order('created_at',{ascending:false});
   renderActividad(eventos||[], l.email_enviado_at);
+  const wrap=document.getElementById('f-email-enviado-wrap');
+  const span=document.getElementById('f-email-enviado-at');
+  wrap.style.display='';
+  if(l.email_enviado_at){wrap.style.color='#1a7a3c';span.textContent='📧 Último email: '+fmtDateShort(l.email_enviado_at.slice(0,10));}else{wrap.style.color='#aaa';span.textContent='📧 Email no enviado';}
   updateSaveBtn();
 }
 
@@ -1421,6 +1400,7 @@ async function sendSelected(){
     try{
       await brevoSend(l.email.trim(),l.nombre||'');
       await sb.from('leads').update({email_enviado_at:now}).eq('id',id);
+      await sb.from('lead_eventos').insert({lead_id:l.id,place_id:l.place_id,nota:'📧 Email de campaña enviado',fecha:now.slice(0,10)});
       l.email_enviado_at=now;
       const cell=document.getElementById('em-sent-'+id);
       if(cell) cell.textContent='✅ '+fmtDate(now);
