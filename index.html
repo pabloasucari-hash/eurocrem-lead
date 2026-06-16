@@ -1499,16 +1499,17 @@ function recSetModo(m){
 }
 
 function recFiltrarInicio(){
-  const q=(document.getElementById('rec-buscar-inicio').value||'').toLowerCase();
+  const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const q=norm(document.getElementById('rec-buscar-inicio').value||'');
   const lista=document.getElementById('rec-lista-inicio');
   if(!q){lista.style.display='none';return;}
-  const leads=allLeads.filter(l=>l.lat&&l.lng&&l.nombre.toLowerCase().includes(q)).slice(0,8);
+  const leads=allLeads.filter(l=>l.lat&&l.lng&&norm(l.nombre||'').includes(q)).slice(0,8);
   lista.innerHTML='';
   leads.forEach(l=>{
     const item=document.createElement('div');
     item.style.cssText='padding:6px 8px;cursor:pointer;border-bottom:1px solid #f5f5f5';
     item.textContent=`${l.nombre} · ${l.barrio||''}`;
-    item.onmousedown=()=>{recInicio={lat:l.lat,lng:l.lng,nombre:l.nombre,lead_id:l.id};recShowInicio();lista.style.display='none';document.getElementById('rec-buscar-inicio').value='';};
+    item.onmousedown=()=>{recInicio={lat:l.lat,lng:l.lng,nombre:l.nombre,lead_id:l.id,place_id:l.place_id};recShowInicio();lista.style.display='none';document.getElementById('rec-buscar-inicio').value='';};
     lista.appendChild(item);
   });
   lista.style.display=leads.length?'block':'none';
@@ -1559,6 +1560,12 @@ async function recCalcular(){
     .slice(0,n);
   if(candidatos.length===0){alert('No hay restaurantes con coordenadas');return;}
   const orden=recOptimizar(recInicio,candidatos);
+  await recRenderizarRuta(orden);
+  const d=new Date();document.getElementById('rec-nombre').value=`Recorrido ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+}
+
+async function recRenderizarRuta(orden){
+  if(!recInicio||orden.length===0) return;
   const waypoints=[recInicio,...orden];
   const coords=waypoints.map(p=>`${p.lng},${p.lat}`).join(';');
   const profile=recModo==='foot'?'foot':'driving';
@@ -1571,7 +1578,7 @@ async function recCalcular(){
     ruta=await r.json();
   }catch(e){console.warn('OSRM error',e);}
 
-  // limpiar mapa (mantener marcador de inicio)
+  // limpiar mapa
   if(recRouteLayer){recMapInstance.removeLayer(recRouteLayer);}
   recMarkers.forEach(m=>recMapInstance.removeLayer(m));recMarkers=[];
 
@@ -1587,7 +1594,6 @@ async function recCalcular(){
     document.getElementById('rec-resumen').textContent=`Total: ${distKm} km · ${minutos} min (${profile==='foot'?'a pie':'en auto'})`;
     recRutaData={waypoints,orden,distKm:parseFloat(distKm),minutos,ruta:ruta.routes[0]};
   } else {
-    // fallback: línea recta
     const line=L.polyline(waypoints.map(p=>[p.lat,p.lng]),{color:'#4285f4',weight:3,dashArray:'6,4'}).addTo(recMapInstance);
     recRouteLayer=line;
     document.getElementById('rec-resumen').textContent='Ruta aproximada (sin conexión OSRM)';
@@ -1598,34 +1604,73 @@ async function recCalcular(){
   recMapInstance.fitBounds(bounds,{padding:[30,30]});
   setTimeout(()=>recMapInstance.invalidateSize(),50);
 
-  // resultado con tiempos por tramo (OSRM legs)
+  // tabla de paradas
   const tbl=document.getElementById('rec-pasos');
   const legs=ruta&&ruta.routes&&ruta.routes[0]&&ruta.routes[0].legs;
+  const n=orden.length;
   const fmtTramo=(i)=>{
     if(!legs||!legs[i]) return '—';
     const km=(legs[i].distance/1000).toFixed(1);
     const min=Math.round(legs[i].duration/60);
-    return `<span style="color:#4285f4">${km}km · ${min}min</span>`;
+    return `<span style="color:#4285f4">${km}km·${min}min</span>`;
   };
-  const cellSt='padding:5px 6px;border-bottom:1px solid #f0f0f0;vertical-align:middle';
-  const headSt='padding:4px 6px;background:#f5f7fa;font-weight:600;color:#555;text-align:left;font-size:11px;border-bottom:2px solid #e0e0e0';
+  const today=new Date().toISOString().slice(0,10);
+  const cellSt='padding:6px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle';
+  const headSt='padding:5px 8px;background:#f5f7fa;font-weight:600;color:#555;text-align:left;font-size:11px;border-bottom:2px solid #e0e0e0';
+  const btnSm='padding:4px 7px;border:1px solid #ddd;border-radius:5px;font-size:12px;background:#fff;cursor:pointer';
+  const visBtn=(idx,pid)=>pid?`<button id="rec-vis-btn-${idx}" onclick="recAbrirVisita('${idx}')" style="${btnSm};background:#e8f5e9;color:#217346;border-color:#c8e6c9;font-weight:700;margin-top:3px;width:100%">+ Visita</button>`:'';
+  const editBtns=(i)=>`<div style="display:flex;gap:3px;justify-content:flex-end">
+    <button onclick="recMoverParada(${i},-1)" ${i===0?'disabled style="opacity:.3"':''} style="${btnSm}" title="Subir">↑</button>
+    <button onclick="recMoverParada(${i},1)" ${i===n-1?'disabled style="opacity:.3"':''} style="${btnSm}" title="Bajar">↓</button>
+    <button onclick="recEliminarParada(${i})" style="${btnSm};color:#c0392b;border-color:#f5b7b1" title="Eliminar">✕</button>
+  </div>`;
+  const formRow=(idx,pid)=>pid?`<tr id="rec-form-${idx}" style="display:none;background:#f9fdf9"><td colspan="4" style="padding:8px 10px">
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px">
+      <button onclick="recSetNota('${idx}','📦 Dejé muestras')" style="${btnSm}">📦 Dejé muestras</button>
+      <button onclick="recSetNota('${idx}','🤝 Hablé con el encargado')" style="${btnSm}">🤝 Encargado</button>
+      <button onclick="recSetNota('${idx}','🔄 Volver a visitar')" style="${btnSm}">🔄 Volver</button>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <input id="rec-nota-${idx}" placeholder="Qué pasó…" style="flex:1;min-width:120px;padding:7px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+      <input id="rec-fecha-${idx}" type="date" value="${today}" style="width:115px;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      <button onclick="recRegistrarVisita('${idx}')" style="padding:7px 14px;background:#217346;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">✓ Registrar</button>
+      <button onclick="document.getElementById('rec-form-${idx}').style.display='none'" style="${btnSm}">✕</button>
+    </div>
+  </td></tr>`:'';
+
+  const inicioHasPid=!!recInicio.place_id;
   tbl.innerHTML=`<thead><tr>
     <th style="${headSt}">#</th>
     <th style="${headSt}">Restaurante</th>
-    <th style="${headSt}">Barrio</th>
     <th style="${headSt}">Tramo</th>
-    <th style="${headSt}">✓</th>
+    <th style="${headSt}"></th>
   </tr></thead><tbody>
-  <tr><td style="${cellSt};color:#e67e22;font-weight:700">🚩</td><td style="${cellSt};font-weight:600" colspan="2">${recInicio.nombre||'Mi ubicación'}</td><td style="${cellSt}">—</td><td style="${cellSt}"></td></tr>
+  <tr id="rec-row-start"><td style="${cellSt};color:#e67e22;font-weight:700;font-size:16px">🚩</td><td style="${cellSt};font-weight:600" colspan="2">${recInicio.nombre||'Mi ubicación'}</td><td style="${cellSt}">${visBtn('start',inicioHasPid)}</td></tr>
+  ${formRow('start',inicioHasPid)}
   `+orden.map((l,i)=>`<tr id="rec-row-${i}">
     <td style="${cellSt};font-weight:700;color:#1e2a3a">${i+1}</td>
-    <td style="${cellSt};font-weight:600">${l.nombre}</td>
-    <td style="${cellSt};color:#888">${l.barrio||''}</td>
+    <td style="${cellSt}"><div style="font-weight:600;font-size:13px">${l.nombre}</div><div style="font-size:11px;color:#888">${l.barrio||''}</div></td>
     <td style="${cellSt};font-size:11px">${fmtTramo(i)}</td>
-    <td style="${cellSt};text-align:center"><input type="checkbox" onchange="recToggleVisita(this,${i})" style="width:16px;height:16px;cursor:pointer"></td>
-  </tr>`).join('')+`</tbody>`;
+    <td style="${cellSt};min-width:90px">${editBtns(i)}${visBtn(i,l.place_id)}</td>
+  </tr>${formRow(i,l.place_id)}`).join('')+`</tbody>`;
   document.getElementById('rec-resultado').style.display='flex';
-  const d=new Date();document.getElementById('rec-nombre').value=`Recorrido ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+}
+
+async function recEliminarParada(idx){
+  if(!recRutaData) return;
+  const orden=[...recRutaData.orden];
+  orden.splice(idx,1);
+  if(orden.length===0){alert('Debe quedar al menos una parada');return;}
+  await recRenderizarRuta(orden);
+}
+
+async function recMoverParada(idx,dir){
+  if(!recRutaData) return;
+  const orden=[...recRutaData.orden];
+  const ni=idx+dir;
+  if(ni<0||ni>=orden.length) return;
+  [orden[idx],orden[ni]]=[orden[ni],orden[idx]];
+  await recRenderizarRuta(orden);
 }
 
 async function recGuardar(){
@@ -1658,9 +1703,32 @@ async function loadRecorridos(){
     </div>`).join('');
 }
 
-function recToggleVisita(cb,i){
-  const row=document.getElementById('rec-row-'+i);
-  if(row) row.style.opacity=cb.checked?'0.45':'1';
+function recAbrirVisita(idx){
+  // cerrar cualquier form abierto
+  document.querySelectorAll('[id^="rec-form-"]').forEach(el=>el.style.display='none');
+  const f=document.getElementById('rec-form-'+idx);
+  if(f){f.style.display='';const n=document.getElementById('rec-nota-'+idx);if(n)n.focus();}
+}
+
+function recSetNota(idx,texto){
+  const n=document.getElementById('rec-nota-'+idx);
+  if(n){n.value=texto;n.focus();}
+}
+
+async function recRegistrarVisita(idx){
+  const pid=idx==='start'?recInicio.place_id:(recRutaData&&recRutaData.orden[idx]?recRutaData.orden[idx].place_id:null);
+  if(!pid){alert('Sin place_id para registrar');return;}
+  const nota=(document.getElementById('rec-nota-'+idx)||{}).value?.trim();
+  if(!nota){document.getElementById('rec-nota-'+idx).focus();return;}
+  const fecha=(document.getElementById('rec-fecha-'+idx)||{}).value||new Date().toISOString().slice(0,10);
+  const {error}=await sb.from('lead_eventos').insert({place_id:pid,nota,fecha});
+  if(error){alert('Error: '+error.message);return;}
+  // marcar fila como visitada
+  const row=document.getElementById('rec-row-'+idx);
+  if(row){row.style.background='#f0fff4';}
+  const btn=document.getElementById('rec-vis-btn-'+idx);
+  if(btn){btn.textContent='✓ Visitado';btn.style.background='#217346';btn.style.color='#fff';btn.style.borderColor='#217346';btn.disabled=true;btn.onclick=null;}
+  document.getElementById('rec-form-'+idx).style.display='none';
 }
 
 async function recCargar(id){
