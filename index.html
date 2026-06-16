@@ -477,60 +477,58 @@ Si querés conocer nuestro catálogo o recibir una cotización sin compromiso, c
 </div>
 
 <!-- ══ RECORRIDOS ══════════════════════════════════════════════════════════ -->
-<div id="screen-recorridos" style="display:none;flex:1;overflow:hidden;flex-direction:column">
-  <div style="display:flex;flex:1;overflow:hidden;gap:0">
+<div id="screen-recorridos" style="display:none;flex:1;overflow:hidden;flex-direction:column;background:#f7f8fa">
 
-    <!-- Panel izquierdo: configuración -->
-    <div id="rec-panel" style="width:280px;min-width:240px;background:#fff;border-right:1px solid #e0e0e0;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden">
+  <!-- TOP: configuración compacta -->
+  <div style="background:#fff;border-bottom:1px solid #e0e0e0;padding:10px 12px;flex-shrink:0">
 
-      <!-- Inicio -->
-      <div style="padding:12px;border-bottom:1px solid #eee;flex-shrink:0">
-        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Punto de inicio</div>
-        <button onclick="recUsarGPS()" style="width:100%;padding:8px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;margin-bottom:6px">📍 Usar mi ubicación (GPS)</button>
-        <input id="rec-buscar-inicio" type="text" placeholder="— o buscá un restaurante —" oninput="recFiltrarInicio()" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
-        <div id="rec-lista-inicio" style="max-height:120px;overflow-y:auto;border:1px solid #eee;border-radius:6px;display:none;font-size:12px;background:#fff;z-index:10"></div>
-        <div id="rec-inicio-label" style="font-size:12px;color:#1e7e34;font-weight:600;margin-top:6px;min-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-      </div>
-
-      <!-- Cantidad + Modo -->
-      <div style="padding:12px;border-bottom:1px solid #eee;flex-shrink:0">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-          <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Restaurantes a visitar</div>
-          <input id="rec-cantidad" type="number" min="1" max="20" value="5" style="width:60px;padding:5px;border:1px solid #ddd;border-radius:6px;font-size:14px;font-weight:700;text-align:center">
-        </div>
-        <div style="display:flex;gap:6px">
-          <button id="rec-btn-auto" onclick="recSetModo('driving')" style="flex:1;padding:7px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">🚗 En auto</button>
-          <button id="rec-btn-pie" onclick="recSetModo('foot')" style="flex:1;padding:7px;background:#eee;color:#555;border:none;border-radius:6px;font-size:12px;cursor:pointer">🚶 A pie</button>
-        </div>
-      </div>
-
-      <!-- Botón sugerir -->
-      <div style="padding:12px;flex-shrink:0">
-        <button onclick="recCalcular()" style="width:100%;padding:11px;background:#217346;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">🗺 Sugerir recorrido</button>
-      </div>
-
-      <!-- Guardados -->
-      <div style="padding:12px;border-top:1px solid #eee;flex:1;overflow-y:auto">
-        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Recorridos guardados</div>
-        <div id="rec-guardados" style="font-size:12px;color:#888">Cargando...</div>
+    <!-- Fila 1: inicio -->
+    <div style="display:flex;gap:6px;margin-bottom:8px;position:relative">
+      <button onclick="recUsarGPS()" style="flex-shrink:0;padding:8px 10px;background:#1e2a3a;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap">📍 GPS</button>
+      <div style="flex:1;position:relative">
+        <input id="rec-buscar-inicio" type="text" placeholder="O buscá un restaurante…" oninput="recFiltrarInicio()" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box">
+        <div id="rec-lista-inicio" style="position:absolute;top:100%;left:0;right:0;max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;display:none;font-size:13px;background:#fff;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div>
       </div>
     </div>
 
-    <!-- Panel derecho: mapa + resultado -->
-    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
-      <div id="rec-map" style="flex:1;min-height:250px"></div>
-      <div id="rec-resultado" style="background:#fff;border-top:1px solid #eee;padding:12px;max-height:220px;overflow-y:auto;display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div id="rec-resumen" style="font-size:12px;font-weight:600;color:#1e2a3a"></div>
-          <div style="display:flex;gap:6px">
-            <input id="rec-nombre" placeholder="Nombre del recorrido" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;width:160px">
-            <button onclick="recGuardar()" style="padding:5px 12px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">💾 Guardar</button>
-          </div>
-        </div>
-        <table id="rec-pasos" style="width:100%;border-collapse:collapse;font-size:12px"></table>
-      </div>
+    <!-- Fila 2: inicio label -->
+    <div id="rec-inicio-label" style="font-size:12px;color:#1e7e34;font-weight:700;margin-bottom:8px;min-height:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+
+    <!-- Fila 3: cantidad + modo + botón -->
+    <div style="display:flex;align-items:center;gap:8px">
+      <label style="font-size:11px;color:#888;white-space:nowrap">Paradas:</label>
+      <input id="rec-cantidad" type="number" min="1" max="20" value="5" style="width:50px;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-weight:700;text-align:center">
+      <button id="rec-btn-auto" onclick="recSetModo('driving')" style="flex:1;padding:8px;background:#1e2a3a;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer">🚗 Auto</button>
+      <button id="rec-btn-pie" onclick="recSetModo('foot')" style="flex:1;padding:8px;background:#eee;color:#555;border:none;border-radius:8px;font-size:12px;cursor:pointer">🚶 A pie</button>
+      <button onclick="recCalcular()" style="flex:2;padding:8px;background:#217346;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">🗺 Sugerir</button>
     </div>
   </div>
+
+  <!-- MEDIO: mapa -->
+  <div id="rec-map" style="flex:1;min-height:0"></div>
+
+  <!-- ABAJO: resultado (oculto hasta calcular) -->
+  <div id="rec-resultado" style="background:#fff;border-top:2px solid #e0e0e0;display:none;flex-direction:column;max-height:45vh;flex-shrink:0">
+
+    <!-- resumen + guardar -->
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #eee;flex-shrink:0">
+      <div id="rec-resumen" style="flex:1;font-size:12px;font-weight:700;color:#1e2a3a"></div>
+      <input id="rec-nombre" placeholder="Nombre…" style="width:120px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      <button onclick="recGuardar()" style="padding:6px 12px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">💾 Guardar</button>
+    </div>
+
+    <!-- grilla de paradas -->
+    <div style="overflow-y:auto;flex:1">
+      <table id="rec-pasos" style="width:100%;border-collapse:collapse;font-size:12px"></table>
+    </div>
+  </div>
+
+  <!-- Recorridos guardados (colapsable) -->
+  <div style="background:#fff;border-top:1px solid #eee;flex-shrink:0">
+    <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'" style="padding:8px 12px;font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">📋 Recorridos guardados ▾</div>
+    <div id="rec-guardados" style="display:none;padding:0 12px 8px;font-size:12px;color:#888;max-height:120px;overflow-y:auto">Cargando...</div>
+  </div>
+
 </div>
 
 <script>
@@ -1626,7 +1624,7 @@ async function recCalcular(){
     <td style="${cellSt};font-size:11px">${fmtTramo(i)}</td>
     <td style="${cellSt};text-align:center"><input type="checkbox" onchange="recToggleVisita(this,${i})" style="width:16px;height:16px;cursor:pointer"></td>
   </tr>`).join('')+`</tbody>`;
-  document.getElementById('rec-resultado').style.display='block';
+  document.getElementById('rec-resultado').style.display='flex';
   const d=new Date();document.getElementById('rec-nombre').value=`Recorrido ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
 }
 
