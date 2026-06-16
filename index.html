@@ -152,6 +152,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 #map-header .coords{font-size:11px;color:#aaa;font-weight:400}
 #map-container{flex:1;min-height:0;position:relative}
 #leaflet-map{width:100%;height:100%}
+.rec-label{background:#fff;border:1px solid #1e2a3a;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:600;color:#1e2a3a;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 /* Evitar que Leaflet muestre imagen fantasma detrás de nuestros divIcon SVG */
 .leaflet-marker-icon { background:none!important; border:none!important; }
 #map-no-coords{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:13px;text-align:center;padding:20px;line-height:1.7;background:#f8f9fa;z-index:1}
@@ -219,6 +220,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   <div class="nav-tab active" onclick="showScreen('leads')">Leads</div>
   <div class="nav-tab" onclick="showScreen('dashboard')">Dashboard</div>
   <div class="nav-tab" onclick="showScreen('email')">✉ Email</div>
+  <div class="nav-tab" onclick="showScreen('recorridos')">🗺 Recorridos</div>
   <div id="save-banner">
     <span>⚠ Cambios sin guardar</span>
     <button onclick="saveLead()">Guardar</button>
@@ -474,6 +476,63 @@ Si querés conocer nuestro catálogo o recibir una cotización sin compromiso, c
   </div>
 </div>
 
+<!-- ══ RECORRIDOS ══════════════════════════════════════════════════════════ -->
+<div id="screen-recorridos" style="display:none;flex:1;overflow:hidden;flex-direction:column">
+  <div style="display:flex;flex:1;overflow:hidden;gap:0">
+
+    <!-- Panel izquierdo: configuración -->
+    <div id="rec-panel" style="width:280px;min-width:240px;background:#fff;border-right:1px solid #e0e0e0;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden">
+
+      <!-- Inicio -->
+      <div style="padding:12px;border-bottom:1px solid #eee;flex-shrink:0">
+        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Punto de inicio</div>
+        <button onclick="recUsarGPS()" style="width:100%;padding:8px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;margin-bottom:6px">📍 Usar mi ubicación (GPS)</button>
+        <input id="rec-buscar-inicio" type="text" placeholder="— o buscá un restaurante —" oninput="recFiltrarInicio()" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+        <div id="rec-lista-inicio" style="max-height:120px;overflow-y:auto;border:1px solid #eee;border-radius:6px;display:none;font-size:12px;background:#fff;z-index:10"></div>
+        <div id="rec-inicio-label" style="font-size:12px;color:#1e7e34;font-weight:600;margin-top:6px;min-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+      </div>
+
+      <!-- Cantidad + Modo -->
+      <div style="padding:12px;border-bottom:1px solid #eee;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Restaurantes a visitar</div>
+          <input id="rec-cantidad" type="number" min="1" max="20" value="5" style="width:60px;padding:5px;border:1px solid #ddd;border-radius:6px;font-size:14px;font-weight:700;text-align:center">
+        </div>
+        <div style="display:flex;gap:6px">
+          <button id="rec-btn-auto" onclick="recSetModo('driving')" style="flex:1;padding:7px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">🚗 En auto</button>
+          <button id="rec-btn-pie" onclick="recSetModo('foot')" style="flex:1;padding:7px;background:#eee;color:#555;border:none;border-radius:6px;font-size:12px;cursor:pointer">🚶 A pie</button>
+        </div>
+      </div>
+
+      <!-- Botón sugerir -->
+      <div style="padding:12px;flex-shrink:0">
+        <button onclick="recCalcular()" style="width:100%;padding:11px;background:#217346;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">🗺 Sugerir recorrido</button>
+      </div>
+
+      <!-- Guardados -->
+      <div style="padding:12px;border-top:1px solid #eee;flex:1;overflow-y:auto">
+        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Recorridos guardados</div>
+        <div id="rec-guardados" style="font-size:12px;color:#888">Cargando...</div>
+      </div>
+    </div>
+
+    <!-- Panel derecho: mapa + resultado -->
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
+      <div id="rec-map" style="flex:1;min-height:250px"></div>
+      <div id="rec-resultado" style="background:#fff;border-top:1px solid #eee;padding:12px;max-height:220px;overflow-y:auto;display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div id="rec-resumen" style="font-size:12px;font-weight:600;color:#1e2a3a"></div>
+          <div style="display:flex;gap:6px">
+            <input id="rec-nombre" placeholder="Nombre del recorrido" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;width:160px">
+            <button onclick="recGuardar()" style="padding:5px 12px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">💾 Guardar</button>
+          </div>
+        </div>
+        <table id="rec-pasos" style="width:100%;border-collapse:collapse;font-size:12px"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL='https://crbmgsmmvfkbxrplqfkl.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyYm1nc21tdmZrYnhycGxxZmtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTY0NDcsImV4cCI6MjA5NjA5MjQ0N30.paXwRRS_Oj6k0RiYHzd7VbKHYM--U_DdfkNm91qN-fg';
@@ -571,8 +630,10 @@ function showScreen(s){
   document.getElementById('screen-leads').style.display=s==='leads'?'flex':'none';
   document.getElementById('screen-dashboard').style.display=s==='dashboard'?'flex':'none';
   document.getElementById('screen-email').style.display=s==='email'?'flex':'none';
-  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&s==='leads')||(i===1&&s==='dashboard')||(i===2&&s==='email')));
+  document.getElementById('screen-recorridos').style.display=s==='recorridos'?'flex':'none';
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&s==='leads')||(i===1&&s==='dashboard')||(i===2&&s==='email')||(i===3&&s==='recorridos')));
   if(s==='dashboard') buildDashboard();
+  if(s==='recorridos'){initRecMap();loadRecorridos();}
   if(s==='email') initEmailScreen();
   if(s==='leads'&&mapInstance) setTimeout(()=>mapInstance.invalidateSize(),50);
 }
@@ -1417,6 +1478,206 @@ async function sendSelected(){
   updateSelCount();
   btn.disabled=false;
 }
+
+// ══ RECORRIDOS ════════════════════════════════════════════════════════════════
+let recMapInstance=null, recRouteLayer=null, recMarkers=[];
+let recInicio=null, recInicioMarker=null, recParadasSel=new Set(), recModo='driving', recRutaData=null;
+
+function initRecMap(){
+  if(recMapInstance) return;
+  recMapInstance=L.map('rec-map').setView([-34.6037,-58.3816],12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(recMapInstance);
+  setTimeout(()=>recMapInstance.invalidateSize(),100);
+  // nada más que inicializar el mapa
+}
+
+function recSetModo(m){
+  recModo=m;
+  document.getElementById('rec-btn-auto').style.background=m==='driving'?'#1e2a3a':'#eee';
+  document.getElementById('rec-btn-auto').style.color=m==='driving'?'#fff':'#555';
+  document.getElementById('rec-btn-pie').style.background=m==='foot'?'#1e2a3a':'#eee';
+  document.getElementById('rec-btn-pie').style.color=m==='foot'?'#fff':'#555';
+  if(recRutaData) recCalcular();
+}
+
+function recFiltrarInicio(){
+  const q=(document.getElementById('rec-buscar-inicio').value||'').toLowerCase();
+  const lista=document.getElementById('rec-lista-inicio');
+  if(!q){lista.style.display='none';return;}
+  const leads=allLeads.filter(l=>l.lat&&l.lng&&l.nombre.toLowerCase().includes(q)).slice(0,8);
+  lista.innerHTML='';
+  leads.forEach(l=>{
+    const item=document.createElement('div');
+    item.style.cssText='padding:6px 8px;cursor:pointer;border-bottom:1px solid #f5f5f5';
+    item.textContent=`${l.nombre} · ${l.barrio||''}`;
+    item.onmousedown=()=>{recInicio={lat:l.lat,lng:l.lng,nombre:l.nombre,lead_id:l.id};recShowInicio();lista.style.display='none';document.getElementById('rec-buscar-inicio').value='';};
+    lista.appendChild(item);
+  });
+  lista.style.display=leads.length?'block':'none';
+}
+
+function recShowInicio(){
+  document.getElementById('rec-inicio-label').textContent=recInicio?`📍 ${recInicio.nombre||'Mi ubicación'}`:'';
+  if(recInicioMarker){recMapInstance.removeLayer(recInicioMarker);recInicioMarker=null;}
+  if(recInicio&&recMapInstance){
+    recInicioMarker=L.marker([recInicio.lat,recInicio.lng],{icon:L.divIcon({html:'<div style="background:#e67e22;width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)"></div>',className:'',iconAnchor:[8,8]})}).addTo(recMapInstance).bindTooltip(`🚩 ${recInicio.nombre||'Inicio'}`,{permanent:true,direction:'right',offset:[10,0],className:'rec-label'});
+    recMapInstance.setView([recInicio.lat,recInicio.lng],14);
+  }
+}
+
+function recUsarGPS(){
+  if(!navigator.geolocation){alert('GPS no disponible');return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    recInicio={lat:pos.coords.latitude,lng:pos.coords.longitude,nombre:'Mi ubicación'};
+    recShowInicio();
+  },()=>alert('No se pudo obtener la ubicación'));
+}
+
+function recLimpiarInicio(){recInicio=null;recShowInicio();document.getElementById('rec-buscar-inicio').value='';}
+function recLimpiarParadas(){recParadasSel.clear();}
+
+function recDistKm(a,b){
+  const R=6371,dL=(b.lat-a.lat)*Math.PI/180,dN=(b.lng-a.lng)*Math.PI/180;
+  const x=Math.sin(dL/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dN/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+
+function recOptimizar(inicio,paradas){
+  let resto=[...paradas],orden=[],actual=inicio;
+  while(resto.length){
+    let best=resto.reduce((m,p)=>recDistKm(actual,p)<recDistKm(actual,m)?p:m);
+    orden.push(best);actual=best;resto=resto.filter(p=>p!==best);
+  }
+  return orden;
+}
+
+async function recCalcular(){
+  if(!recInicio){alert('Elegí un punto de inicio');return;}
+  const n=parseInt(document.getElementById('rec-cantidad').value)||5;
+  // encontrar los N leads con coordenadas más cercanos al inicio
+  const candidatos=allLeads.filter(l=>l.lat&&l.lng&&!(recInicio.lead_id&&l.id===recInicio.lead_id))
+    .map(l=>({...l,_dist:recDistKm(recInicio,l)}))
+    .sort((a,b)=>a._dist-b._dist)
+    .slice(0,n);
+  if(candidatos.length===0){alert('No hay restaurantes con coordenadas');return;}
+  const orden=recOptimizar(recInicio,candidatos);
+  const waypoints=[recInicio,...orden];
+  const coords=waypoints.map(p=>`${p.lng},${p.lat}`).join(';');
+  const profile=recModo==='foot'?'foot':'driving';
+  let ruta=null;
+  try{
+    const osrmBase=profile==='foot'
+      ?`https://routing.openstreetmap.de/routed-foot/route/v1/foot`
+      :`https://routing.openstreetmap.de/routed-car/route/v1/driving`;
+    const r=await fetch(`${osrmBase}/${coords}?overview=full&geometries=geojson&steps=false&annotations=false`);
+    ruta=await r.json();
+  }catch(e){console.warn('OSRM error',e);}
+
+  // limpiar mapa (mantener marcador de inicio)
+  if(recRouteLayer){recMapInstance.removeLayer(recRouteLayer);}
+  recMarkers.forEach(m=>recMapInstance.removeLayer(m));recMarkers=[];
+
+  orden.forEach((l,i)=>{
+    const m=L.marker([l.lat,l.lng],{icon:L.divIcon({html:`<div style="background:#1e2a3a;color:#fff;width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${i+1}</div>`,className:'',iconAnchor:[11,11]})}).addTo(recMapInstance).bindPopup(`<b>${i+1}. ${l.nombre}</b><br>${l.barrio||''}`).bindTooltip(`${i+1}. ${l.nombre}`,{permanent:true,direction:'right',offset:[12,0],className:'rec-label'});
+    recMarkers.push(m);
+  });
+
+  if(ruta&&ruta.routes&&ruta.routes[0]){
+    recRouteLayer=L.geoJSON(ruta.routes[0].geometry,{style:{color:'#4285f4',weight:4,opacity:.8}}).addTo(recMapInstance);
+    const distKm=(ruta.routes[0].distance/1000).toFixed(1);
+    const minutos=Math.round(ruta.routes[0].duration/60);
+    document.getElementById('rec-resumen').textContent=`Total: ${distKm} km · ${minutos} min (${profile==='foot'?'a pie':'en auto'})`;
+    recRutaData={waypoints,orden,distKm:parseFloat(distKm),minutos,ruta:ruta.routes[0]};
+  } else {
+    // fallback: línea recta
+    const line=L.polyline(waypoints.map(p=>[p.lat,p.lng]),{color:'#4285f4',weight:3,dashArray:'6,4'}).addTo(recMapInstance);
+    recRouteLayer=line;
+    document.getElementById('rec-resumen').textContent='Ruta aproximada (sin conexión OSRM)';
+    recRutaData={waypoints,orden,distKm:null,minutos:null,ruta:null};
+  }
+
+  const bounds=L.latLngBounds(waypoints.map(p=>[p.lat,p.lng]));
+  recMapInstance.fitBounds(bounds,{padding:[30,30]});
+  setTimeout(()=>recMapInstance.invalidateSize(),50);
+
+  // resultado con tiempos por tramo (OSRM legs)
+  const tbl=document.getElementById('rec-pasos');
+  const legs=ruta&&ruta.routes&&ruta.routes[0]&&ruta.routes[0].legs;
+  const fmtTramo=(i)=>{
+    if(!legs||!legs[i]) return '—';
+    const km=(legs[i].distance/1000).toFixed(1);
+    const min=Math.round(legs[i].duration/60);
+    return `<span style="color:#4285f4">${km}km · ${min}min</span>`;
+  };
+  const cellSt='padding:5px 6px;border-bottom:1px solid #f0f0f0;vertical-align:middle';
+  const headSt='padding:4px 6px;background:#f5f7fa;font-weight:600;color:#555;text-align:left;font-size:11px;border-bottom:2px solid #e0e0e0';
+  tbl.innerHTML=`<thead><tr>
+    <th style="${headSt}">#</th>
+    <th style="${headSt}">Restaurante</th>
+    <th style="${headSt}">Barrio</th>
+    <th style="${headSt}">Tramo</th>
+    <th style="${headSt}">✓</th>
+  </tr></thead><tbody>
+  <tr><td style="${cellSt};color:#e67e22;font-weight:700">🚩</td><td style="${cellSt};font-weight:600" colspan="2">${recInicio.nombre||'Mi ubicación'}</td><td style="${cellSt}">—</td><td style="${cellSt}"></td></tr>
+  `+orden.map((l,i)=>`<tr id="rec-row-${i}">
+    <td style="${cellSt};font-weight:700;color:#1e2a3a">${i+1}</td>
+    <td style="${cellSt};font-weight:600">${l.nombre}</td>
+    <td style="${cellSt};color:#888">${l.barrio||''}</td>
+    <td style="${cellSt};font-size:11px">${fmtTramo(i)}</td>
+    <td style="${cellSt};text-align:center"><input type="checkbox" onchange="recToggleVisita(this,${i})" style="width:16px;height:16px;cursor:pointer"></td>
+  </tr>`).join('')+`</tbody>`;
+  document.getElementById('rec-resultado').style.display='block';
+  const d=new Date();document.getElementById('rec-nombre').value=`Recorrido ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+}
+
+async function recGuardar(){
+  if(!recRutaData){return;}
+  const nombre=document.getElementById('rec-nombre').value.trim()||'Sin nombre';
+  const payload={
+    nombre,
+    fecha:new Date().toISOString().slice(0,10),
+    punto_inicio:recRutaData.waypoints[0],
+    paradas:recRutaData.orden.map((l,i)=>({orden:i+1,lead_id:l.id,place_id:l.place_id,nombre:l.nombre,barrio:l.barrio,lat:l.lat,lng:l.lng})),
+    modo:recModo,
+    distancia_total:recRutaData.distKm,
+    duracion_total:recRutaData.minutos
+  };
+  const {error}=await sb.from('recorridos').insert(payload);
+  if(error){alert('Error al guardar: '+error.message);return;}
+  alert('✅ Recorrido guardado');
+  loadRecorridos();
+}
+
+async function loadRecorridos(){
+  const div=document.getElementById('rec-guardados');
+  div.textContent='Cargando...';
+  const {data,error}=await sb.from('recorridos').select('id,nombre,fecha,modo,distancia_total,duracion_total,punto_inicio,paradas').order('created_at',{ascending:false}).limit(10);
+  if(error||!data||data.length===0){div.textContent=error?'Error al cargar':'Sin recorridos guardados.';return;}
+  div.innerHTML=data.map(r=>`
+    <div style="padding:8px 0;border-bottom:1px solid #f0f0f0;cursor:pointer" onclick="recCargar('${r.id}')">
+      <div style="font-weight:600;color:#1e2a3a;font-size:12px">${r.nombre}</div>
+      <div style="font-size:11px;color:#888">${r.fecha} · ${r.modo==='foot'?'🚶 A pie':'🚗 Auto'} · ${r.paradas.length} paradas${r.distancia_total?' · '+r.distancia_total+'km':''}</div>
+    </div>`).join('');
+}
+
+function recToggleVisita(cb,i){
+  const row=document.getElementById('rec-row-'+i);
+  if(row) row.style.opacity=cb.checked?'0.45':'1';
+}
+
+async function recCargar(id){
+  const {data,error}=await sb.from('recorridos').select('*').eq('id',id).single();
+  if(error||!data) return;
+  recInicio=data.punto_inicio;
+  recShowInicio();
+  recInicio=data.punto_inicio;
+  recShowInicio();
+  document.getElementById('rec-cantidad').value=data.paradas.length;
+  recModo=data.modo;recSetModo(recModo);
+  alert(`Recorrido "${data.nombre}" cargado. Presioná "Sugerir recorrido" para ver la ruta.`);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 
 loadLeads();
 _initEmailDraftListeners();
