@@ -513,8 +513,9 @@ Si querés conocer nuestro catálogo o recibir una cotización sin compromiso, c
     <!-- resumen + guardar -->
     <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #eee;flex-shrink:0">
       <div id="rec-resumen" style="flex:1;font-size:12px;font-weight:700;color:#1e2a3a"></div>
-      <input id="rec-nombre" placeholder="Nombre…" style="width:120px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
-      <button onclick="recGuardar()" style="padding:6px 12px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">💾 Guardar</button>
+      <input id="rec-nombre" placeholder="Nombre…" style="width:100px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      <button onclick="recGuardar()" style="padding:6px 10px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">💾</button>
+      <button onclick="recAbrirGoogleMaps()" style="padding:6px 12px;background:#4285f4;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🧭 Google Maps</button>
     </div>
 
     <!-- grilla de paradas -->
@@ -1671,6 +1672,18 @@ async function recMoverParada(idx,dir){
   if(ni<0||ni>=orden.length) return;
   [orden[idx],orden[ni]]=[orden[ni],orden[idx]];
   await recRenderizarRuta(orden);
+}
+
+function recAbrirGoogleMaps(){
+  if(!recRutaData||recRutaData.orden.length===0) return;
+  const orden=recRutaData.orden;
+  const origin=`${recInicio.lat},${recInicio.lng}`;
+  const destination=`${orden[orden.length-1].lat},${orden[orden.length-1].lng}`;
+  const waypoints=orden.slice(0,-1).map(p=>`${p.lat},${p.lng}`).join('|');
+  const mode=recModo==='foot'?'walking':'driving';
+  let url=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=${mode}`;
+  if(waypoints) url+=`&waypoints=${encodeURIComponent(waypoints)}`;
+  window.open(url,'_blank');
 }
 
 async function recGuardar(){
