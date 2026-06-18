@@ -508,18 +508,19 @@ Si querés conocer nuestro catálogo o recibir una cotización sin compromiso, c
   <div id="rec-map" style="flex:1;min-height:0"></div>
 
   <!-- ABAJO: resultado (oculto hasta calcular) -->
-  <div id="rec-resultado" style="background:#fff;border-top:2px solid #e0e0e0;display:none;flex-direction:column;max-height:45vh;flex-shrink:0">
+  <div id="rec-resultado" style="background:#fff;border-top:2px solid #e0e0e0;display:none;flex-direction:column;max-height:38vh;flex-shrink:0">
 
     <!-- resumen + guardar -->
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #eee;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #eee;flex-shrink:0">
+      <button onclick="recTogglePanel()" id="rec-toggle-btn" style="padding:2px 6px;border:1px solid #ddd;border-radius:5px;background:#f5f5f5;font-size:13px;cursor:pointer;line-height:1;color:#555" title="Colapsar/expandir">▾</button>
       <div id="rec-resumen" style="flex:1;font-size:12px;font-weight:700;color:#1e2a3a"></div>
       <input id="rec-nombre" placeholder="Nombre…" style="width:100px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
-      <button onclick="recGuardar()" style="padding:6px 10px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">💾</button>
-      <button onclick="recAbrirGoogleMaps()" style="padding:6px 12px;background:#4285f4;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🧭 Google Maps</button>
+      <button onclick="recGuardar()" style="padding:5px 10px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">💾</button>
+      <button onclick="recAbrirGoogleMaps()" style="padding:5px 12px;background:#4285f4;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🧭 Google Maps</button>
     </div>
 
     <!-- grilla de paradas -->
-    <div style="overflow-y:auto;flex:1">
+    <div id="rec-pasos-wrap" style="overflow-y:auto;flex:1">
       <table id="rec-pasos" style="width:100%;border-collapse:collapse;font-size:12px"></table>
     </div>
   </div>
@@ -639,11 +640,20 @@ function showScreen(s){
 
 // ── LOAD ──────────────────────────────────────────────────────────────────────
 async function loadLeads(){
-  const {data,error}=await sb.from('leads')
-    .select('id,place_id,nombre,barrio,whatsapp,email,email_2,instagram,facebook,link_wame,sitio_web,telefono,direccion,precio,fit,origen_contacto,enriquecido,google_nota,google_resenas,horarios,notas,notas_internas,notas_internas_at,lat,lng,photo_ref,cliente_eurocrem,email_enviado_at,contacto')
-    .order('barrio').order('nombre');
-  if(error){document.getElementById('lead-count').textContent='Error al cargar';return;}
-  allLeads=data;
+  const fields='id,place_id,nombre,barrio,whatsapp,email,email_2,instagram,facebook,link_wame,sitio_web,telefono,direccion,precio,fit,origen_contacto,enriquecido,google_nota,google_resenas,horarios,notas,notas_internas,notas_internas_at,lat,lng,photo_ref,cliente_eurocrem,email_enviado_at,contacto';
+  const PAGE=1000;
+  let all=[], from=0, done=false;
+  while(!done){
+    const {data,error}=await sb.from('leads')
+      .select(fields)
+      .order('barrio').order('nombre')
+      .range(from, from+PAGE-1);
+    if(error){document.getElementById('lead-count').textContent='Error al cargar';return;}
+    all=all.concat(data||[]);
+    done=!data||data.length<PAGE;
+    from+=PAGE;
+  }
+  allLeads=all;
   populateBarrioFilter();
   renderList();
 }
@@ -1616,15 +1626,20 @@ async function recRenderizarRuta(orden){
     return `<span style="color:#4285f4">${km}km·${min}min</span>`;
   };
   const today=new Date().toISOString().slice(0,10);
-  const cellSt='padding:6px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle';
-  const headSt='padding:5px 8px;background:#f5f7fa;font-weight:600;color:#555;text-align:left;font-size:11px;border-bottom:2px solid #e0e0e0';
-  const btnSm='padding:4px 7px;border:1px solid #ddd;border-radius:5px;font-size:12px;background:#fff;cursor:pointer';
-  const visBtn=(idx,pid)=>pid?`<button id="rec-vis-btn-${idx}" onclick="recAbrirVisita('${idx}')" style="${btnSm};background:#e8f5e9;color:#217346;border-color:#c8e6c9;font-weight:700;margin-top:3px;width:100%">+ Visita</button>`:'';
-  const editBtns=(i)=>`<div style="display:flex;gap:3px;justify-content:flex-end">
-    <button onclick="recMoverParada(${i},-1)" ${i===0?'disabled style="opacity:.3"':''} style="${btnSm}" title="Subir">↑</button>
-    <button onclick="recMoverParada(${i},1)" ${i===n-1?'disabled style="opacity:.3"':''} style="${btnSm}" title="Bajar">↓</button>
-    <button onclick="recEliminarParada(${i})" style="${btnSm};color:#c0392b;border-color:#f5b7b1" title="Eliminar">✕</button>
-  </div>`;
+  const cellSt='padding:3px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle';
+  const headSt='padding:4px 8px;background:#f5f7fa;font-weight:600;color:#555;text-align:left;font-size:11px;border-bottom:2px solid #e0e0e0';
+  // botón base con altura fija y flex centrado para que + ↑ ↓ ✕ queden todos al mismo nivel
+  const btnBase='height:22px;min-width:22px;padding:0 5px;border:1px solid #ddd;border-radius:5px;font-size:12px;background:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:1';
+  const btnSm='padding:4px 10px;border:1px solid #ddd;border-radius:5px;font-size:12px;background:#fff;cursor:pointer';
+  const actionBtns=(i,pid)=>{
+    const upOff=i===0, downOff=i===n-1;
+    return `<div style="display:flex;gap:2px;justify-content:flex-end;align-items:center">
+      ${pid?`<button id="rec-vis-btn-${i}" onclick="recAbrirVisita('${i}')" style="${btnBase};color:#e67e22;border-color:#e67e22;font-weight:700" title="Registrar visita">+</button>`:''}
+      <button onclick="recMoverParada(${i},-1)" ${upOff?'disabled':''} style="${btnBase};color:#e67e22;${upOff?'opacity:.3':''}" title="Subir">↑</button>
+      <button onclick="recMoverParada(${i},1)" ${downOff?'disabled':''} style="${btnBase};color:#e67e22;${downOff?'opacity:.3':''}" title="Bajar">↓</button>
+      <button onclick="recEliminarParada(${i})" style="${btnBase};color:#c0392b;border-color:#f5b7b1" title="Eliminar">✕</button>
+    </div>`;
+  };
   const formRow=(idx,pid)=>pid?`<tr id="rec-form-${idx}" style="display:none;background:#f9fdf9"><td colspan="4" style="padding:8px 10px">
     <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px">
       <button onclick="recSetNota('${idx}','📦 Dejé muestras')" style="${btnSm}">📦 Dejé muestras</button>
@@ -1646,15 +1661,24 @@ async function recRenderizarRuta(orden){
     <th style="${headSt}">Tramo</th>
     <th style="${headSt}"></th>
   </tr></thead><tbody>
-  <tr id="rec-row-start"><td style="${cellSt};color:#e67e22;font-weight:700;font-size:16px">🚩</td><td style="${cellSt};font-weight:600" colspan="2">${recInicio.nombre||'Mi ubicación'}</td><td style="${cellSt}">${visBtn('start',inicioHasPid)}</td></tr>
+  <tr id="rec-row-start"><td style="${cellSt};color:#e67e22;font-weight:700;font-size:16px">🚩</td><td style="${cellSt};font-weight:600" colspan="2">${recInicio.nombre||'Mi ubicación'}</td><td style="${cellSt}">${inicioHasPid?`<div style="display:flex;gap:2px;justify-content:flex-end"><button id="rec-vis-btn-start" onclick="recAbrirVisita('start')" style="${btnBase};color:#e67e22;border-color:#e67e22;font-weight:700" title="Registrar visita">+</button></div>`:''}</td></tr>
   ${formRow('start',inicioHasPid)}
   `+orden.map((l,i)=>`<tr id="rec-row-${i}">
     <td style="${cellSt};font-weight:700;color:#1e2a3a">${i+1}</td>
-    <td style="${cellSt}"><div style="font-weight:600;font-size:13px">${l.nombre}</div><div style="font-size:11px;color:#888">${l.barrio||''}</div></td>
+    <td style="${cellSt}"><span style="font-weight:600;font-size:13px">${l.nombre}</span><span style="font-size:11px;color:#888;margin-left:4px">${l.barrio||''}</span></td>
     <td style="${cellSt};font-size:11px">${fmtTramo(i)}</td>
-    <td style="${cellSt};min-width:90px">${editBtns(i)}${visBtn(i,l.place_id)}</td>
+    <td style="${cellSt};min-width:100px">${actionBtns(i,l.place_id)}</td>
   </tr>${formRow(i,l.place_id)}`).join('')+`</tbody>`;
   document.getElementById('rec-resultado').style.display='flex';
+}
+
+function recTogglePanel(){
+  const wrap=document.getElementById('rec-pasos-wrap');
+  const btn=document.getElementById('rec-toggle-btn');
+  const collapsed=wrap.style.display==='none';
+  wrap.style.display=collapsed?'':'none';
+  btn.textContent=collapsed?'▾':'▴';
+  setTimeout(()=>recMapInstance&&recMapInstance.invalidateSize(),50);
 }
 
 async function recEliminarParada(idx){
