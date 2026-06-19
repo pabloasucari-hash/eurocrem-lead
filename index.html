@@ -16,6 +16,7 @@
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDj8Q--Sn63RiYOp3ZF93Hp6P4BH51K49M&callback=onGoogleMapsLoaded"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#f0f2f5;color:#1a1a1a;display:flex;flex-direction:column;height:100vh;overflow:hidden;color-scheme:light}
@@ -211,6 +212,39 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 
 /* Botón volver — oculto en desktop */
 #btn-back-mobile{display:none;align-items:center;gap:6px;background:none;border:none;color:#4285f4;font-size:14px;font-weight:600;cursor:pointer;padding:6px 0 10px 0;font-family:inherit}
+
+/* ── RECORRIDOS Google Maps ─────────────────────────────────────────────── */
+#rec-gmap{position:absolute;inset:0;z-index:1}
+#rec-panel{position:absolute;top:0;left:0;width:340px;height:100%;background:#fff;box-shadow:2px 0 12px rgba(0,0,0,.18);z-index:10;display:flex;flex-direction:column;overflow:hidden}
+#rec-panel-header{padding:10px 12px;border-bottom:1px solid #e0e0e0;flex-shrink:0}
+#rec-panel-body{flex:1;overflow-y:auto}
+#rec-panel-footer{padding:8px 12px;border-top:1px solid #e0e0e0;flex-shrink:0;background:#fff}
+.rec-drag-handle{display:none;justify-content:center;padding:6px 0 2px;cursor:pointer;flex-shrink:0}
+.rec-drag-handle>div{width:36px;height:4px;border-radius:2px;background:#ddd}
+.rec-inicio-row{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid #f0f0f0;background:#fff8f0}
+.rec-stop-row{display:flex;align-items:center;gap:5px;padding:8px 12px;border-bottom:1px solid #f0f0f0}
+.rec-stop-row:hover{background:#f9f9f9}
+.rec-stop-num{width:22px;height:22px;border-radius:50%;background:#1e2a3a;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rec-stop-info{flex:1;min-width:0}
+.rec-stop-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec-stop-sub{font-size:11px;color:#888}
+.rec-stop-leg{font-size:11px;color:#4285f4;white-space:nowrap;margin-right:2px;flex-shrink:0}
+.rec-stop-btns{display:flex;gap:2px;flex-shrink:0}
+.rec-sbtn{width:22px;height:22px;border:1px solid #ddd;border-radius:5px;background:#fff;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;line-height:1}
+.rec-sbtn:hover{background:#f0f0f0}
+.rec-sbtn.visit{color:#e67e22;border-color:#e67e22;font-size:14px;font-weight:700}
+.rec-sbtn.del{color:#c0392b;border-color:#f5b7b1}
+.rec-sbtn:disabled{opacity:.3;cursor:default}
+.rec-nav-btn{color:#1558d6;border-color:#1558d6;font-size:10px}
+@media(min-width:769px){.rec-nav-btn{display:none}}
+.rec-visit-form{background:#f0fff4;padding:10px 12px;border-bottom:1px solid #e0e0e0;display:none}
+.rec-visit-form .qbtns{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.rec-visit-form .qbtn{padding:4px 8px;border:1px solid #ddd;border-radius:5px;background:#fff;font-size:11px;cursor:pointer}
+@media(max-width:768px){
+  #rec-panel{width:100%;height:auto;top:auto;bottom:0;border-radius:12px 12px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,.18);max-height:60vh;transition:max-height .25s}
+  #rec-panel.collapsed{max-height:158px;overflow:hidden}
+  .rec-drag-handle{display:flex}
+}
 </style>
 </head>
 <body>
@@ -420,7 +454,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
     <label>Remitente</label>
     <input id="em-from-name" value="Eurocrem Helados">
     <label>Email remitente</label>
-    <input id="em-from-email" value="pabloasucari@gmail.com">
+    <input id="em-from-email" value="info@eurocrem.com.ar">
     <label>Asunto</label>
     <input id="em-subject" value="Helados Eurocrem para tu restaurante — calidad y entrega inmediata">
     <label>Cuerpo del email</label>
@@ -477,60 +511,61 @@ Si querés conocer nuestro catálogo o recibir una cotización sin compromiso, c
 </div>
 
 <!-- ══ RECORRIDOS ══════════════════════════════════════════════════════════ -->
-<div id="screen-recorridos" style="display:none;flex:1;overflow:hidden;flex-direction:column;background:#f7f8fa">
+<div id="screen-recorridos" style="display:none;flex:1;overflow:hidden;position:relative">
 
-  <!-- TOP: configuración compacta -->
-  <div style="background:#fff;border-bottom:1px solid #e0e0e0;padding:10px 12px;flex-shrink:0">
+  <!-- Google Maps pantalla completa -->
+  <div id="rec-gmap"></div>
 
-    <!-- Fila 1: inicio -->
-    <div style="display:flex;gap:6px;margin-bottom:8px;position:relative">
-      <button onclick="recUsarGPS()" style="flex-shrink:0;padding:8px 10px;background:#1e2a3a;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap">📍 GPS</button>
-      <div style="flex:1;position:relative">
-        <input id="rec-buscar-inicio" type="text" placeholder="O buscá un restaurante…" oninput="recFiltrarInicio()" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box">
-        <div id="rec-lista-inicio" style="position:absolute;top:100%;left:0;right:0;max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;display:none;font-size:13px;background:#fff;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div>
+  <!-- Panel overlay: izquierda en desktop, bottom sheet en mobile -->
+  <div id="rec-panel">
+
+    <!-- Mobile: drag handle para colapsar/expandir -->
+    <div class="rec-drag-handle" onclick="recTogglePanel()"><div></div></div>
+
+    <!-- Header: configuración -->
+    <div id="rec-panel-header">
+      <!-- Toggle Auto / Manual -->
+      <div style="display:flex;gap:4px;margin-bottom:8px">
+        <button id="rec-modo-auto" onclick="recToggleModoRec('auto')" style="flex:1;padding:6px;background:#1e2a3a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">🗺 Automático</button>
+        <button id="rec-modo-manual" onclick="recToggleModoRec('manual')" style="flex:1;padding:6px;background:#eee;color:#555;border:none;border-radius:8px;font-size:12px;cursor:pointer">✋ Manual</button>
       </div>
+      <!-- Fila 1: GPS + búsqueda -->
+      <div style="display:flex;gap:6px;margin-bottom:7px;position:relative">
+        <button onclick="recUsarGPS()" style="flex-shrink:0;padding:8px 10px;background:#1e2a3a;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap">📍 GPS</button>
+        <div style="flex:1;position:relative">
+          <input id="rec-buscar-inicio" type="text" placeholder="O buscá un restaurante…" oninput="recFiltrarInicio()" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box">
+          <div id="rec-lista-inicio" style="position:absolute;top:100%;left:0;right:0;max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;display:none;font-size:13px;background:#fff;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div>
+        </div>
+      </div>
+      <!-- Label inicio seleccionado -->
+      <div id="rec-inicio-label" style="font-size:12px;color:#1e7e34;font-weight:700;margin-bottom:8px;min-height:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+      <!-- Fila 2: paradas + modo + sugerir (solo modo auto) -->
+      <div id="rec-auto-only" style="display:flex;align-items:center;gap:6px">
+        <label style="font-size:11px;color:#888;white-space:nowrap">Paradas:</label>
+        <input id="rec-cantidad" type="number" min="1" max="20" value="5" style="width:48px;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-weight:700;text-align:center">
+        <button id="rec-btn-auto" onclick="recSetModo('driving')" style="flex:1;padding:8px;background:#1e2a3a;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer">🚗 Auto</button>
+        <button id="rec-btn-pie" onclick="recSetModo('foot')" style="flex:1;padding:8px;background:#eee;color:#555;border:none;border-radius:8px;font-size:12px;cursor:pointer">🚶 A pie</button>
+        <button onclick="recCalcular()" style="flex:2;padding:8px;background:#217346;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">🗺 Sugerir</button>
+      </div>
+      <!-- Hint modo manual -->
+      <div id="rec-manual-only" style="display:none;font-size:12px;color:#888;padding:4px 0">Tocá los restaurantes en el mapa para armar tu recorrido</div>
     </div>
 
-    <!-- Fila 2: inicio label -->
-    <div id="rec-inicio-label" style="font-size:12px;color:#1e7e34;font-weight:700;margin-bottom:8px;min-height:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+    <!-- Body: lista de paradas (oculto hasta calcular ruta) -->
+    <div id="rec-panel-body" style="display:none"></div>
 
-    <!-- Fila 3: cantidad + modo + botón -->
-    <div style="display:flex;align-items:center;gap:8px">
-      <label style="font-size:11px;color:#888;white-space:nowrap">Paradas:</label>
-      <input id="rec-cantidad" type="number" min="1" max="20" value="5" style="width:50px;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-weight:700;text-align:center">
-      <button id="rec-btn-auto" onclick="recSetModo('driving')" style="flex:1;padding:8px;background:#1e2a3a;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer">🚗 Auto</button>
-      <button id="rec-btn-pie" onclick="recSetModo('foot')" style="flex:1;padding:8px;background:#eee;color:#555;border:none;border-radius:8px;font-size:12px;cursor:pointer">🚶 A pie</button>
-      <button onclick="recCalcular()" style="flex:2;padding:8px;background:#217346;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">🗺 Sugerir</button>
+    <!-- Footer: resumen + guardar + navegar + guardados -->
+    <div id="rec-panel-footer" style="display:none">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <div id="rec-resumen" style="flex:1;font-size:12px;font-weight:700;color:#1e2a3a;min-width:120px"></div>
+        <input id="rec-nombre" placeholder="Nombre del recorrido…" style="flex:1;min-width:90px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+        <button onclick="recGuardar()" style="padding:5px 10px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">💾</button>
+      </div>
+      <div id="rec-guardados-toggle" onclick="recToggleGuardados()" style="padding:4px 0;font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">📋 Guardados ▾</div>
+      <div id="rec-guardados" style="display:none;font-size:12px;color:#888;max-height:120px;overflow-y:auto;padding-top:4px">Cargando...</div>
     </div>
+
   </div>
-
-  <!-- MEDIO: mapa -->
-  <div id="rec-map" style="flex:1;min-height:0"></div>
-
-  <!-- ABAJO: resultado (oculto hasta calcular) -->
-  <div id="rec-resultado" style="background:#fff;border-top:2px solid #e0e0e0;display:none;flex-direction:column;max-height:38vh;flex-shrink:0">
-
-    <!-- resumen + guardar -->
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #eee;flex-shrink:0">
-      <button onclick="recTogglePanel()" id="rec-toggle-btn" style="padding:2px 6px;border:1px solid #ddd;border-radius:5px;background:#f5f5f5;font-size:13px;cursor:pointer;line-height:1;color:#555" title="Colapsar/expandir">▾</button>
-      <div id="rec-resumen" style="flex:1;font-size:12px;font-weight:700;color:#1e2a3a"></div>
-      <input id="rec-nombre" placeholder="Nombre…" style="width:100px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
-      <button onclick="recGuardar()" style="padding:5px 10px;background:#1e2a3a;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">💾</button>
-      <button onclick="recAbrirGoogleMaps()" style="padding:5px 12px;background:#4285f4;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🧭 Google Maps</button>
-    </div>
-
-    <!-- grilla de paradas -->
-    <div id="rec-pasos-wrap" style="overflow-y:auto;flex:1">
-      <table id="rec-pasos" style="width:100%;border-collapse:collapse;font-size:12px"></table>
-    </div>
-  </div>
-
-  <!-- Recorridos guardados (colapsable) -->
-  <div style="background:#fff;border-top:1px solid #eee;flex-shrink:0">
-    <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'" style="padding:8px 12px;font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">📋 Recorridos guardados ▾</div>
-    <div id="rec-guardados" style="display:none;padding:0 12px 8px;font-size:12px;color:#888;max-height:120px;overflow-y:auto">Cargando...</div>
-  </div>
-
 </div>
 
 <script>
@@ -1316,7 +1351,7 @@ async function exportXLSX(){
 }
 
 // ── EMAIL ─────────────────────────────────────────────────────────────────────
-const BREVO_KEY='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';
+const BREVO_KEY='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';
 
 function emailLog(msg){
   const el=document.getElementById('email-log');
@@ -1488,39 +1523,93 @@ async function sendSelected(){
   btn.disabled=false;
 }
 
-// ══ RECORRIDOS ════════════════════════════════════════════════════════════════
-let recMapInstance=null, recRouteLayer=null, recMarkers=[];
-let recInicio=null, recInicioMarker=null, recParadasSel=new Set(), recModo='driving', recRutaData=null;
+// ══ RECORRIDOS (Google Maps) ════════════════════════════════════════════════
+let recGMap=null, recDirService=null, recDirRenderer=null;
+let recInicio=null, recOrden=[], recLegs=[], recModo='driving';
+let recInicioMarkerG=null, recCustomMarkers=[], recInfoWindows=[];
+let recModoActual='auto', recViewportMarkers=[], recManualParadas=[], recIdleListener=null, recOpenIW=null;
+
+window.onGoogleMapsLoaded=function(){ _initGMap(); };
 
 function initRecMap(){
-  if(recMapInstance) return;
-  recMapInstance=L.map('rec-map').setView([-34.6037,-58.3816],12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(recMapInstance);
-  setTimeout(()=>recMapInstance.invalidateSize(),100);
-  // nada más que inicializar el mapa
+  if(typeof google!=='undefined'&&google.maps) _initGMap();
+}
+
+function _initGMap(){
+  if(recGMap) return;
+  recGMap=new google.maps.Map(document.getElementById('rec-gmap'),{
+    center:{lat:-34.6037,lng:-58.3816},zoom:12,
+    gestureHandling:'greedy',zoomControl:true,
+    fullscreenControl:false,mapTypeControl:false,streetViewControl:false
+  });
+  recDirService=new google.maps.DirectionsService();
+  recDirRenderer=new google.maps.DirectionsRenderer({
+    map:recGMap,suppressMarkers:true,
+    polylineOptions:{strokeColor:'#4285f4',strokeWeight:5,strokeOpacity:.85}
+  });
+}
+
+function _ensureGMap(){
+  if(typeof google==='undefined'||!google.maps) return false;
+  _initGMap();
+  return true;
+}
+
+function _markerSvg(label,bg,textColor){
+  bg=bg||'#1e2a3a'; textColor=textColor||'white';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42">
+    <path d="M16 0C7.2 0 0 7.2 0 16c0 11.3 16 26 16 26S32 27.3 32 16C32 7.2 24.8 0 16 0z" fill="${bg}" stroke="white" stroke-width="1.5"/>
+    <text x="16" y="21" text-anchor="middle" font-size="${String(label).length>2?'10':'13'}" font-weight="700" fill="${textColor}" font-family="Arial,sans-serif" dominant-baseline="middle">${label}</text>
+  </svg>`;
+}
+
+function _clearCustomMarkers(){
+  recCustomMarkers.forEach(m=>m.setMap(null));
+  recInfoWindows.forEach(iw=>iw.close());
+  recCustomMarkers=[];
+  recInfoWindows=[];
+}
+
+function _addStopMarker(lat,lng,label,nombre,bg){
+  if(!recGMap) return;
+  const icon={
+    url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(_markerSvg(label,bg)),
+    scaledSize:new google.maps.Size(32,42),
+    anchor:new google.maps.Point(16,42)
+  };
+  const marker=new google.maps.Marker({position:{lat,lng},map:recGMap,icon,title:nombre,zIndex:50});
+  const iw=new google.maps.InfoWindow({
+    content:`<div style="font-size:11px;font-weight:700;color:#1e2a3a;white-space:nowrap;padding:1px 3px;max-width:160px;overflow:hidden;text-overflow:ellipsis">${nombre}</div>`,
+    disableAutoPan:true
+  });
+  marker.addListener('click',()=>iw.open(recGMap,marker));
+  recCustomMarkers.push(marker);
+  recInfoWindows.push(iw);
 }
 
 function recSetModo(m){
   recModo=m;
-  document.getElementById('rec-btn-auto').style.background=m==='driving'?'#1e2a3a':'#eee';
-  document.getElementById('rec-btn-auto').style.color=m==='driving'?'#fff':'#555';
-  document.getElementById('rec-btn-pie').style.background=m==='foot'?'#1e2a3a':'#eee';
-  document.getElementById('rec-btn-pie').style.color=m==='foot'?'#fff':'#555';
-  if(recRutaData) recCalcular();
+  document.getElementById('rec-btn-auto').style.cssText=`flex:1;padding:8px;border:none;border-radius:8px;font-size:12px;cursor:pointer;background:${m==='driving'?'#1e2a3a':'#eee'};color:${m==='driving'?'#fff':'#555'}`;
+  document.getElementById('rec-btn-pie').style.cssText=`flex:1;padding:8px;border:none;border-radius:8px;font-size:12px;cursor:pointer;background:${m==='foot'?'#1e2a3a':'#eee'};color:${m==='foot'?'#fff':'#555'}`;
+  if(recOrden.length) recRenderizarRuta(recOrden,false);
 }
 
 function recFiltrarInicio(){
-  const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
-  const q=norm(document.getElementById('rec-buscar-inicio').value||'');
+  const normStr=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const q=normStr(document.getElementById('rec-buscar-inicio').value||'');
   const lista=document.getElementById('rec-lista-inicio');
   if(!q){lista.style.display='none';return;}
-  const leads=allLeads.filter(l=>l.lat&&l.lng&&norm(l.nombre||'').includes(q)).slice(0,8);
+  const leads=allLeads.filter(l=>l.lat&&l.lng&&normStr(l.nombre||'').includes(q)).slice(0,8);
   lista.innerHTML='';
   leads.forEach(l=>{
     const item=document.createElement('div');
-    item.style.cssText='padding:6px 8px;cursor:pointer;border-bottom:1px solid #f5f5f5';
+    item.style.cssText='padding:6px 8px;cursor:pointer;border-bottom:1px solid #f5f5f5;font-size:13px;background:#fff';
     item.textContent=`${l.nombre} · ${l.barrio||''}`;
-    item.onmousedown=()=>{recInicio={lat:l.lat,lng:l.lng,nombre:l.nombre,lead_id:l.id,place_id:l.place_id};recShowInicio();lista.style.display='none';document.getElementById('rec-buscar-inicio').value='';};
+    item.onmousedown=()=>{
+      recInicio={lat:l.lat,lng:l.lng,nombre:l.nombre,lead_id:l.id,place_id:l.place_id};
+      recShowInicio();lista.style.display='none';
+      document.getElementById('rec-buscar-inicio').value='';
+    };
     lista.appendChild(item);
   });
   lista.style.display=leads.length?'block':'none';
@@ -1528,11 +1617,26 @@ function recFiltrarInicio(){
 
 function recShowInicio(){
   document.getElementById('rec-inicio-label').textContent=recInicio?`📍 ${recInicio.nombre||'Mi ubicación'}`:'';
-  if(recInicioMarker){recMapInstance.removeLayer(recInicioMarker);recInicioMarker=null;}
-  if(recInicio&&recMapInstance){
-    recInicioMarker=L.marker([recInicio.lat,recInicio.lng],{icon:L.divIcon({html:'<div style="background:#e67e22;width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)"></div>',className:'',iconAnchor:[8,8]})}).addTo(recMapInstance).bindTooltip(`🚩 ${recInicio.nombre||'Inicio'}`,{permanent:true,direction:'right',offset:[10,0],className:'rec-label'});
-    recMapInstance.setView([recInicio.lat,recInicio.lng],14);
-  }
+  if(!_ensureGMap()) return;
+  if(recInicioMarkerG) recInicioMarkerG.setMap(null);
+  if(!recInicio) return;
+  // Marcador de inicio: estrella naranja con "🚩"
+  const iconInicio={
+    url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(_markerSvg('1','#e67e22','white')),
+    scaledSize:new google.maps.Size(32,42),
+    anchor:new google.maps.Point(16,42)
+  };
+  recInicioMarkerG=new google.maps.Marker({
+    position:{lat:recInicio.lat,lng:recInicio.lng},map:recGMap,
+    icon:iconInicio,title:recInicio.nombre||'Inicio (Partida)',zIndex:200
+  });
+  const iwInicio=new google.maps.InfoWindow({
+    content:`<div style="font-size:11px;font-weight:700;color:#e67e22;white-space:nowrap;padding:1px 3px">🚩 ${recInicio.nombre||'Partida'}</div>`,
+    disableAutoPan:true
+  });
+  iwInicio.open(recGMap,recInicioMarkerG);
+  recGMap.setCenter({lat:recInicio.lat,lng:recInicio.lng});
+  recGMap.setZoom(14);
 }
 
 function recUsarGPS(){
@@ -1543,229 +1647,362 @@ function recUsarGPS(){
   },()=>alert('No se pudo obtener la ubicación'));
 }
 
-function recLimpiarInicio(){recInicio=null;recShowInicio();document.getElementById('rec-buscar-inicio').value='';}
-function recLimpiarParadas(){recParadasSel.clear();}
-
 function recDistKm(a,b){
   const R=6371,dL=(b.lat-a.lat)*Math.PI/180,dN=(b.lng-a.lng)*Math.PI/180;
   const x=Math.sin(dL/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dN/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-function recOptimizar(inicio,paradas){
-  let resto=[...paradas],orden=[],actual=inicio;
-  while(resto.length){
-    let best=resto.reduce((m,p)=>recDistKm(actual,p)<recDistKm(actual,m)?p:m);
-    orden.push(best);actual=best;resto=resto.filter(p=>p!==best);
-  }
-  return orden;
-}
-
 async function recCalcular(){
   if(!recInicio){alert('Elegí un punto de inicio');return;}
+  if(!recGMap) _initGMap();
   const n=parseInt(document.getElementById('rec-cantidad').value)||5;
-  // encontrar los N leads con coordenadas más cercanos al inicio
-  const candidatos=allLeads.filter(l=>l.lat&&l.lng&&!(recInicio.lead_id&&l.id===recInicio.lead_id))
+  const candidatos=allLeads
+    .filter(l=>l.lat&&l.lng&&!(recInicio.lead_id&&l.id===recInicio.lead_id))
     .map(l=>({...l,_dist:recDistKm(recInicio,l)}))
     .sort((a,b)=>a._dist-b._dist)
     .slice(0,n);
-  if(candidatos.length===0){alert('No hay restaurantes con coordenadas');return;}
-  const orden=recOptimizar(recInicio,candidatos);
-  await recRenderizarRuta(orden);
-  const d=new Date();document.getElementById('rec-nombre').value=`Recorrido ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+  if(!candidatos.length){alert('No hay restaurantes con coordenadas');return;}
+  await recRenderizarRuta(candidatos,true);
+  const d=new Date();
+  if(!document.getElementById('rec-nombre').value)
+    document.getElementById('rec-nombre').value=`Recorrido ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
 }
 
-async function recRenderizarRuta(orden){
-  if(!recInicio||orden.length===0) return;
-  const waypoints=[recInicio,...orden];
-  const coords=waypoints.map(p=>`${p.lng},${p.lat}`).join(';');
-  const profile=recModo==='foot'?'foot':'driving';
-  let ruta=null;
-  try{
-    const osrmBase=profile==='foot'
-      ?`https://routing.openstreetmap.de/routed-foot/route/v1/foot`
-      :`https://routing.openstreetmap.de/routed-car/route/v1/driving`;
-    const r=await fetch(`${osrmBase}/${coords}?overview=full&geometries=geojson&steps=false&annotations=false`);
-    ruta=await r.json();
-  }catch(e){console.warn('OSRM error',e);}
-
-  // limpiar mapa
-  if(recRouteLayer){recMapInstance.removeLayer(recRouteLayer);}
-  recMarkers.forEach(m=>recMapInstance.removeLayer(m));recMarkers=[];
-
-  orden.forEach((l,i)=>{
-    const m=L.marker([l.lat,l.lng],{icon:L.divIcon({html:`<div style="background:#1e2a3a;color:#fff;width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${i+1}</div>`,className:'',iconAnchor:[11,11]})}).addTo(recMapInstance).bindPopup(`<b>${i+1}. ${l.nombre}</b><br>${l.barrio||''}`).bindTooltip(`${i+1}. ${l.nombre}`,{permanent:true,direction:'right',offset:[12,0],className:'rec-label'});
-    recMarkers.push(m);
+function recRenderizarRuta(paradas,optimize){
+  return new Promise(resolve=>{
+    if(!recGMap) _initGMap();
+    if(!recDirService){setTimeout(()=>recRenderizarRuta(paradas,optimize).then(resolve),600);return;}
+    // Reset renderer
+    if(recDirRenderer) recDirRenderer.setMap(null);
+    recDirRenderer=new google.maps.DirectionsRenderer({
+      map:recGMap,suppressMarkers:true,polylineOptions:{strokeColor:'#1558d6',strokeWeight:7}
+    });
+    const travelMode=recModo==='foot'?google.maps.TravelMode.WALKING:google.maps.TravelMode.DRIVING;
+    const origin=new google.maps.LatLng(recInicio.lat,recInicio.lng);
+    const destination=new google.maps.LatLng(paradas[paradas.length-1].lat,paradas[paradas.length-1].lng);
+    const waypoints=paradas.slice(0,-1).map(l=>({location:new google.maps.LatLng(l.lat,l.lng),stopover:true}));
+    recDirService.route({origin,destination,waypoints,optimizeWaypoints:optimize,travelMode},(result,status)=>{
+      if(status!=='OK'){alert('Error al calcular ruta: '+status);resolve();return;}
+      recDirRenderer.setDirections(result);
+      const wpOrder=result.routes[0].waypoint_order;
+      const intermedias=paradas.slice(0,-1);
+      const ultima=paradas[paradas.length-1];
+      recOrden=[...wpOrder.map(i=>intermedias[i]),ultima];
+      recLegs=result.routes[0].legs;
+      const totDist=recLegs.reduce((s,l)=>s+l.distance.value,0);
+      const totTime=recLegs.reduce((s,l)=>s+l.duration.value,0);
+      document.getElementById('rec-resumen').textContent=
+        `🗺 Google: ${(totDist/1000).toFixed(1)} km · ${Math.round(totTime/60)} min (${recModo==='foot'?'a pie':'en auto'})`;
+      // Marcadores numerados con nombre
+      _clearCustomMarkers();
+      if(recInicio) _addStopMarker(recInicio.lat,recInicio.lng,'1',recInicio.nombre||'Inicio','#e67e22');
+      recOrden.forEach((l,i)=>{
+        _addStopMarker(l.lat,l.lng,i+2,l.nombre,'#1e2a3a');
+      });
+      renderRecStops();
+      document.getElementById('rec-panel-body').style.display='';
+      document.getElementById('rec-panel-footer').style.display='';
+      document.getElementById('rec-panel').classList.remove('collapsed');
+      resolve();
+    });
   });
+}
 
-  if(ruta&&ruta.routes&&ruta.routes[0]){
-    recRouteLayer=L.geoJSON(ruta.routes[0].geometry,{style:{color:'#4285f4',weight:4,opacity:.8}}).addTo(recMapInstance);
-    const distKm=(ruta.routes[0].distance/1000).toFixed(1);
-    const minutos=Math.round(ruta.routes[0].duration/60);
-    document.getElementById('rec-resumen').textContent=`Total: ${distKm} km · ${minutos} min (${profile==='foot'?'a pie':'en auto'})`;
-    recRutaData={waypoints,orden,distKm:parseFloat(distKm),minutos,ruta:ruta.routes[0]};
-  } else {
-    const line=L.polyline(waypoints.map(p=>[p.lat,p.lng]),{color:'#4285f4',weight:3,dashArray:'6,4'}).addTo(recMapInstance);
-    recRouteLayer=line;
-    document.getElementById('rec-resumen').textContent='Ruta aproximada (sin conexión OSRM)';
-    recRutaData={waypoints,orden,distKm:null,minutos:null,ruta:null};
-  }
+function visitFormHtml(idx,today){
+  return `<div class="qbtns">
+    <button class="qbtn" onclick="recSetNota('${idx}','📦 Dejé muestras')">📦 Muestras</button>
+    <button class="qbtn" onclick="recSetNota('${idx}','🤝 Hablé con encargado')">🤝 Encargado</button>
+    <button class="qbtn" onclick="recSetNota('${idx}','🔄 Volver a visitar')">🔄 Volver</button>
+  </div>
+  <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+    <input id="rec-nota-${idx}" placeholder="Qué pasó…" style="flex:1;min-width:90px;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+    <input id="rec-fecha-${idx}" type="date" value="${today}" style="width:108px;padding:5px;border:1px solid #ddd;border-radius:6px;font-size:11px">
+    <button onclick="recRegistrarVisita('${idx}')" style="padding:6px 10px;background:#217346;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✓</button>
+    <button onclick="document.getElementById('rec-visit-${idx}').style.display='none'" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer">✕</button>
+  </div>`;
+}
 
-  const bounds=L.latLngBounds(waypoints.map(p=>[p.lat,p.lng]));
-  recMapInstance.fitBounds(bounds,{padding:[30,30]});
-  setTimeout(()=>recMapInstance.invalidateSize(),50);
-
-  // tabla de paradas
-  const tbl=document.getElementById('rec-pasos');
-  const legs=ruta&&ruta.routes&&ruta.routes[0]&&ruta.routes[0].legs;
-  const n=orden.length;
-  const fmtTramo=(i)=>{
-    if(!legs||!legs[i]) return '—';
-    const km=(legs[i].distance/1000).toFixed(1);
-    const min=Math.round(legs[i].duration/60);
-    return `<span style="color:#4285f4">${km}km·${min}min</span>`;
-  };
+function renderRecStops(){
+  const body=document.getElementById('rec-panel-body');
   const today=new Date().toISOString().slice(0,10);
-  const cellSt='padding:3px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle';
-  const headSt='padding:4px 8px;background:#f5f7fa;font-weight:600;color:#555;text-align:left;font-size:11px;border-bottom:2px solid #e0e0e0';
-  // botón base con altura fija y flex centrado para que + ↑ ↓ ✕ queden todos al mismo nivel
-  const btnBase='height:22px;min-width:22px;padding:0 5px;border:1px solid #ddd;border-radius:5px;font-size:12px;background:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:1';
-  const btnSm='padding:4px 10px;border:1px solid #ddd;border-radius:5px;font-size:12px;background:#fff;cursor:pointer';
-  const actionBtns=(i,pid)=>{
-    const upOff=i===0, downOff=i===n-1;
-    return `<div style="display:flex;gap:2px;justify-content:flex-end;align-items:center">
-      ${pid?`<button id="rec-vis-btn-${i}" onclick="recAbrirVisita('${i}')" style="${btnBase};color:#e67e22;border-color:#e67e22;font-weight:700" title="Registrar visita">+</button>`:''}
-      <button onclick="recMoverParada(${i},-1)" ${upOff?'disabled':''} style="${btnBase};color:#e67e22;${upOff?'opacity:.3':''}" title="Subir">↑</button>
-      <button onclick="recMoverParada(${i},1)" ${downOff?'disabled':''} style="${btnBase};color:#e67e22;${downOff?'opacity:.3':''}" title="Bajar">↓</button>
-      <button onclick="recEliminarParada(${i})" style="${btnBase};color:#c0392b;border-color:#f5b7b1" title="Eliminar">✕</button>
-    </div>`;
-  };
-  const formRow=(idx,pid)=>pid?`<tr id="rec-form-${idx}" style="display:none;background:#f9fdf9"><td colspan="4" style="padding:8px 10px">
-    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px">
-      <button onclick="recSetNota('${idx}','📦 Dejé muestras')" style="${btnSm}">📦 Dejé muestras</button>
-      <button onclick="recSetNota('${idx}','🤝 Hablé con el encargado')" style="${btnSm}">🤝 Encargado</button>
-      <button onclick="recSetNota('${idx}','🔄 Volver a visitar')" style="${btnSm}">🔄 Volver</button>
+  let html=`<div class="rec-inicio-row">
+    <div style="width:22px;height:22px;border-radius:50%;background:#e67e22;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px">🚩</div>
+    <div style="flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${recInicio.nombre||'Mi ubicación'}</div>
+    ${recInicio.place_id?`<button class="rec-sbtn visit" onclick="recAbrirVisita('start')">+</button>`:''}
+  </div>
+  <div id="rec-visit-start" class="rec-visit-form">${visitFormHtml('start',today)}</div>`;
+  recOrden.forEach((l,i)=>{
+    const leg=recLegs[i];
+    const isLast=i===recOrden.length-1;
+    html+=`<div class="rec-stop-row" id="rec-row-${i}">
+      <div class="rec-stop-num">${i+2}</div>
+      <div class="rec-stop-info">
+        <div class="rec-stop-name" title="${l.nombre}">${l.nombre}</div>
+        <div class="rec-stop-sub">${l.barrio||''}</div>
+      </div>
+      <div class="rec-stop-leg">${leg?leg.distance.text+' · '+leg.duration.text:'—'}</div>
+      <div class="rec-stop-btns">
+        <button class="rec-sbtn visit" onclick="recAbrirVisita(${i})" title="Registrar visita">+</button>
+        ${l.lat&&l.lng?`<button class="rec-sbtn rec-nav-btn" onclick="recNavegar(${l.lat},${l.lng})" title="Navegar">&#9654;</button>`:''}
+        <button class="rec-sbtn" onclick="recMoverParada(${i},-1)" ${i===0?'disabled':''} title="Subir">↑</button>
+        <button class="rec-sbtn" onclick="recMoverParada(${i},1)" ${isLast?'disabled':''} title="Bajar">↓</button>
+        <button class="rec-sbtn del" onclick="recEliminarParada(${i})" title="Eliminar">✕</button>
+      </div>
     </div>
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <input id="rec-nota-${idx}" placeholder="Qué pasó…" style="flex:1;min-width:120px;padding:7px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px">
-      <input id="rec-fecha-${idx}" type="date" value="${today}" style="width:115px;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:12px">
-      <button onclick="recRegistrarVisita('${idx}')" style="padding:7px 14px;background:#217346;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">✓ Registrar</button>
-      <button onclick="document.getElementById('rec-form-${idx}').style.display='none'" style="${btnSm}">✕</button>
-    </div>
-  </td></tr>`:'';
-
-  const inicioHasPid=!!recInicio.place_id;
-  tbl.innerHTML=`<thead><tr>
-    <th style="${headSt}">#</th>
-    <th style="${headSt}">Restaurante</th>
-    <th style="${headSt}">Tramo</th>
-    <th style="${headSt}"></th>
-  </tr></thead><tbody>
-  <tr id="rec-row-start"><td style="${cellSt};color:#e67e22;font-weight:700;font-size:16px">🚩</td><td style="${cellSt};font-weight:600" colspan="2">${recInicio.nombre||'Mi ubicación'}</td><td style="${cellSt}">${inicioHasPid?`<div style="display:flex;gap:2px;justify-content:flex-end"><button id="rec-vis-btn-start" onclick="recAbrirVisita('start')" style="${btnBase};color:#e67e22;border-color:#e67e22;font-weight:700" title="Registrar visita">+</button></div>`:''}</td></tr>
-  ${formRow('start',inicioHasPid)}
-  `+orden.map((l,i)=>`<tr id="rec-row-${i}">
-    <td style="${cellSt};font-weight:700;color:#1e2a3a">${i+1}</td>
-    <td style="${cellSt}"><span style="font-weight:600;font-size:13px">${l.nombre}</span><span style="font-size:11px;color:#888;margin-left:4px">${l.barrio||''}</span></td>
-    <td style="${cellSt};font-size:11px">${fmtTramo(i)}</td>
-    <td style="${cellSt};min-width:100px">${actionBtns(i,l.place_id)}</td>
-  </tr>${formRow(i,l.place_id)}`).join('')+`</tbody>`;
-  document.getElementById('rec-resultado').style.display='flex';
+    <div id="rec-visit-${i}" class="rec-visit-form">${visitFormHtml(i,today)}</div>`;
+  });
+  body.innerHTML=html;
 }
 
-function recTogglePanel(){
-  const wrap=document.getElementById('rec-pasos-wrap');
-  const btn=document.getElementById('rec-toggle-btn');
-  const collapsed=wrap.style.display==='none';
-  wrap.style.display=collapsed?'':'none';
-  btn.textContent=collapsed?'▾':'▴';
-  setTimeout(()=>recMapInstance&&recMapInstance.invalidateSize(),50);
+function recAbrirVisita(idx){
+  document.querySelectorAll('.rec-visit-form').forEach(el=>el.style.display='none');
+  const f=document.getElementById(`rec-visit-${idx}`);
+  if(f){
+    f.style.display='block';
+    f.scrollIntoView({behavior:'smooth',block:'nearest'});
+    const n=document.getElementById(`rec-nota-${idx}`);
+    if(n) setTimeout(()=>n.focus(),200);
+  }
 }
 
-async function recEliminarParada(idx){
-  if(!recRutaData) return;
-  const orden=[...recRutaData.orden];
-  orden.splice(idx,1);
-  if(orden.length===0){alert('Debe quedar al menos una parada');return;}
-  await recRenderizarRuta(orden);
+function recSetNota(idx,texto){
+  const n=document.getElementById(`rec-nota-${idx}`);if(n){n.value=texto;n.focus();}
+}
+
+async function recRegistrarVisita(idx){
+  const pid=idx==='start'?recInicio.place_id:(recOrden[idx]?recOrden[idx].place_id:null);
+  if(!pid){alert('Sin place_id');return;}
+  const nota=(document.getElementById(`rec-nota-${idx}`)||{}).value?.trim();
+  if(!nota){document.getElementById(`rec-nota-${idx}`).focus();return;}
+  const fecha=(document.getElementById(`rec-fecha-${idx}`)||{}).value||new Date().toISOString().slice(0,10);
+  const {error}=await sb.from('lead_eventos').insert({place_id:pid,nota,fecha});
+  if(error){alert('Error: '+error.message);return;}
+  const row=document.getElementById(`rec-row-${idx}`)||document.querySelector('.rec-inicio-row');
+  if(row) row.style.background='#f0fff4';
+  const btn=row?row.querySelector('.rec-sbtn.visit'):null;
+  if(btn){btn.textContent='✓';btn.style.cssText='width:22px;height:22px;border-radius:5px;border:none;background:#217346;color:#fff;cursor:default;font-size:12px;display:flex;align-items:center;justify-content:center';btn.disabled=true;}
+  document.getElementById(`rec-visit-${idx}`).style.display='none';
 }
 
 async function recMoverParada(idx,dir){
-  if(!recRutaData) return;
-  const orden=[...recRutaData.orden];
   const ni=idx+dir;
-  if(ni<0||ni>=orden.length) return;
-  [orden[idx],orden[ni]]=[orden[ni],orden[idx]];
-  await recRenderizarRuta(orden);
+  if(ni<0||ni>=recOrden.length) return;
+  [recOrden[idx],recOrden[ni]]=[recOrden[ni],recOrden[idx]];
+  await recRenderizarRuta(recOrden,false);
+}
+
+async function recEliminarParada(idx){
+  recOrden.splice(idx,1);
+  if(!recOrden.length){
+    document.getElementById('rec-panel-body').style.display='none';
+    document.getElementById('rec-panel-footer').style.display='none';
+    if(recDirRenderer){recDirRenderer.setMap(null);recDirRenderer=null;}
+    _clearCustomMarkers();
+    return;
+  }
+  await recRenderizarRuta(recOrden,false);
 }
 
 function recAbrirGoogleMaps(){
-  if(!recRutaData||recRutaData.orden.length===0) return;
-  const orden=recRutaData.orden;
+  if(!recOrden.length) return;
   const origin=`${recInicio.lat},${recInicio.lng}`;
-  const destination=`${orden[orden.length-1].lat},${orden[orden.length-1].lng}`;
-  const waypoints=orden.slice(0,-1).map(p=>`${p.lat},${p.lng}`).join('|');
+  const dest=`${recOrden[recOrden.length-1].lat},${recOrden[recOrden.length-1].lng}`;
+  const wps=recOrden.slice(0,-1).map(p=>`${p.lat},${p.lng}`).join('|');
   const mode=recModo==='foot'?'walking':'driving';
-  let url=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=${mode}`;
-  if(waypoints) url+=`&waypoints=${encodeURIComponent(waypoints)}`;
+  let url=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=${mode}`;
+  if(wps) url+=`&waypoints=${encodeURIComponent(wps)}`;
+  window.open(url,'_blank');
+}
+
+// ── Modo Manual ──────────────────────────────────────────────────────────────
+function recToggleModoRec(modo){
+  recModoActual=modo;
+  const activeS='flex:1;padding:6px;background:#1e2a3a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer';
+  const inactS='flex:1;padding:6px;background:#eee;color:#555;border:none;border-radius:8px;font-size:12px;cursor:pointer';
+  document.getElementById('rec-modo-auto').style.cssText=modo==='auto'?activeS:inactS;
+  document.getElementById('rec-modo-manual').style.cssText=modo==='manual'?activeS:inactS;
+  document.getElementById('rec-auto-only').style.display=modo==='auto'?'flex':'none';
+  document.getElementById('rec-manual-only').style.display=modo==='manual'?'block':'none';
+  if(modo==='manual') _activarManual();
+  else _desactivarManual();
+}
+
+function _activarManual(){
+  recManualParadas=[];
+  recOrden=[];recLegs=[];
+  if(recDirRenderer) recDirRenderer.setMap(null);
+  _clearCustomMarkers();
+  document.getElementById('rec-panel-footer').style.display='none';
+  _renderManualList();
+  if(!_ensureGMap()) return;
+  recIdleListener=recGMap.addListener('idle',_refreshVPMarkers);
+  _refreshVPMarkers();
+}
+
+function _desactivarManual(){
+  if(recIdleListener){google.maps.event.removeListener(recIdleListener);recIdleListener=null;}
+  _clearVPMarkers();
+  recManualParadas=[];
+  document.getElementById('rec-panel-body').style.display='none';
+  document.getElementById('rec-panel-footer').style.display='none';
+}
+
+function _clearVPMarkers(){
+  recViewportMarkers.forEach(m=>m.setMap(null));
+  recViewportMarkers=[];
+  if(recOpenIW){recOpenIW.close();recOpenIW=null;}
+}
+
+function _vpDot(state){
+  const fill=state==='inicio'?'#e67e22':state==='added'?'#27ae60':'#1558d6';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5" fill="${fill}" stroke="white" stroke-width="1.5"/></svg>`;
+}
+
+function _refreshVPMarkers(){
+  if(!recGMap||recModoActual!=='manual') return;
+  _clearVPMarkers();
+  const bounds=recGMap.getBounds();
+  if(!bounds) return;
+  const addedIds=new Set(recManualParadas.map(l=>l.id));
+  allLeads
+    .filter(l=>l.lat&&l.lng&&bounds.contains({lat:l.lat,lng:l.lng}))
+    .slice(0,150)
+    .forEach(l=>{
+      const isInicio=recInicio&&recInicio.lead_id===l.id;
+      const added=addedIds.has(l.id);
+      const state=isInicio?'inicio':added?'added':'normal';
+      const m=new google.maps.Marker({
+        position:{lat:l.lat,lng:l.lng},map:recGMap,zIndex:isInicio?30:added?20:10,
+        icon:{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(_vpDot(state)),scaledSize:new google.maps.Size(14,14),anchor:new google.maps.Point(7,7)},
+        title:l.nombre
+      });
+      m.addListener('click',()=>_clickVPMarker(l,m,state));
+      recViewportMarkers.push(m);
+    });
+}
+
+function _clickVPMarker(l,marker,state){
+  if(recOpenIW){recOpenIW.close();recOpenIW=null;}
+  // Si no hay inicio todavía → este se convierte en el punto 1
+  if(!recInicio){
+    recInicio={lat:l.lat,lng:l.lng,nombre:l.nombre,lead_id:l.id,place_id:l.place_id};
+    recShowInicio();
+    _refreshVPMarkers();
+    _renderManualList();
+    return;
+  }
+  const isInicio=state==='inicio';
+  const added=state==='added';
+  const iw=new google.maps.InfoWindow({
+    content:`<div style="font-size:12px;max-width:180px;font-family:Arial,sans-serif">
+      <div style="font-weight:700;color:#1e2a3a;margin-bottom:2px">${l.nombre}</div>
+      <div style="color:#999;font-size:11px;margin-bottom:8px">${l.barrio||''}</div>
+      ${isInicio
+        ?`<div style="color:#e67e22;font-weight:700;font-size:12px">📍 Punto de inicio (1)</div>`
+        :added
+          ?`<div style="color:#27ae60;font-weight:700;font-size:12px">✓ Ya agregado</div>`
+          :`<button onclick="recAgregarManual(${l.id})" style="padding:6px 12px;background:#1558d6;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;width:100%">+ Agregar al recorrido</button>`
+      }
+    </div>`
+  });
+  iw.open(recGMap,marker);
+  recOpenIW=iw;
+}
+
+function recAgregarManual(leadId){
+  const l=allLeads.find(x=>x.id===leadId);
+  if(!l||recManualParadas.find(x=>x.id===leadId)) return;
+  recManualParadas.push(l);
+  if(recOpenIW){recOpenIW.close();recOpenIW=null;}
+  _refreshVPMarkers();
+  _renderManualList();
+}
+
+function recQuitarManual(i){
+  recManualParadas.splice(i,1);
+  _refreshVPMarkers();
+  _renderManualList();
+}
+
+function _renderManualList(){
+  const body=document.getElementById('rec-panel-body');
+  body.style.display='block';
+  if(!recManualParadas.length){
+    body.innerHTML=`<div style="padding:20px 16px;font-size:13px;color:#bbb;text-align:center;line-height:1.6">${!recInicio?'Tocá un restaurante en el mapa<br>para establecer el punto de inicio':'Tocá los puntitos azules<br>para agregar paradas al recorrido'}</div>`;
+    return;
+  }
+  let html='';
+  recManualParadas.forEach((l,i)=>{
+    html+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #f0f0f0">
+      <div style="width:22px;height:22px;border-radius:50%;background:#e67e22;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.nombre}</div>
+        <div style="font-size:11px;color:#aaa">${l.barrio||''}</div>
+      </div>
+      <button onclick="recQuitarManual(${i})" style="width:22px;height:22px;border:1px solid #f5b7b1;border-radius:5px;background:#fff;cursor:pointer;font-size:11px;color:#c0392b;flex-shrink:0">✕</button>
+    </div>`;
+  });
+  html+=`<div style="padding:10px 12px">
+    <button onclick="recCalcularManual()" style="width:100%;padding:10px;background:#217346;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">🗺 Calcular ruta (${recManualParadas.length})</button>
+  </div>`;
+  body.innerHTML=html;
+}
+
+async function recCalcularManual(){
+  if(!recInicio){alert('Elegí un punto de inicio (GPS o búsqueda)');return;}
+  if(!recManualParadas.length){alert('Agregá al menos una parada');return;}
+  _clearVPMarkers();
+  if(recIdleListener){google.maps.event.removeListener(recIdleListener);recIdleListener=null;}
+  await recRenderizarRuta(recManualParadas,true);
+  document.getElementById('rec-panel-footer').style.display='';
+}
+// ── Fin Modo Manual ───────────────────────────────────────────────────────────
+
+function recNavegar(lat,lng){
+  const url=`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=${recModo==='foot'?'walking':'driving'}`;
   window.open(url,'_blank');
 }
 
 async function recGuardar(){
-  if(!recRutaData){return;}
+  if(!recOrden.length) return;
   const nombre=document.getElementById('rec-nombre').value.trim()||'Sin nombre';
   const payload={
-    nombre,
-    fecha:new Date().toISOString().slice(0,10),
-    punto_inicio:recRutaData.waypoints[0],
-    paradas:recRutaData.orden.map((l,i)=>({orden:i+1,lead_id:l.id,place_id:l.place_id,nombre:l.nombre,barrio:l.barrio,lat:l.lat,lng:l.lng})),
+    nombre,fecha:new Date().toISOString().slice(0,10),
+    punto_inicio:recInicio,
+    paradas:recOrden.map((l,i)=>({orden:i+1,lead_id:l.id,place_id:l.place_id,nombre:l.nombre,barrio:l.barrio,lat:l.lat,lng:l.lng})),
     modo:recModo,
-    distancia_total:recRutaData.distKm,
-    duracion_total:recRutaData.minutos
+    distancia_total:parseFloat((recLegs.reduce((s,l)=>s+l.distance.value,0)/1000).toFixed(1)),
+    duracion_total:Math.round(recLegs.reduce((s,l)=>s+l.duration.value,0)/60)
   };
   const {error}=await sb.from('recorridos').insert(payload);
-  if(error){alert('Error al guardar: '+error.message);return;}
+  if(error){alert('Error: '+error.message);return;}
   alert('✅ Recorrido guardado');
   loadRecorridos();
 }
 
 async function loadRecorridos(){
   const div=document.getElementById('rec-guardados');
-  div.textContent='Cargando...';
-  const {data,error}=await sb.from('recorridos').select('id,nombre,fecha,modo,distancia_total,duracion_total,punto_inicio,paradas').order('created_at',{ascending:false}).limit(10);
-  if(error||!data||data.length===0){div.textContent=error?'Error al cargar':'Sin recorridos guardados.';return;}
+  if(!div) return;
+  const {data,error}=await sb.from('recorridos').select('id,nombre,fecha,modo,distancia_total,paradas').order('created_at',{ascending:false}).limit(10);
+  if(error||!data||!data.length){div.textContent=error?'Error al cargar':'Sin recorridos guardados.';return;}
   div.innerHTML=data.map(r=>`
-    <div style="padding:8px 0;border-bottom:1px solid #f0f0f0;cursor:pointer" onclick="recCargar('${r.id}')">
-      <div style="font-weight:600;color:#1e2a3a;font-size:12px">${r.nombre}</div>
-      <div style="font-size:11px;color:#888">${r.fecha} · ${r.modo==='foot'?'🚶 A pie':'🚗 Auto'} · ${r.paradas.length} paradas${r.distancia_total?' · '+r.distancia_total+'km':''}</div>
+    <div style="padding:7px 0;border-bottom:1px solid #f0f0f0;cursor:pointer" onclick="recCargar('${r.id}')">
+      <div style="font-weight:600;font-size:12px;color:#1e2a3a">${r.nombre}</div>
+      <div style="font-size:11px;color:#888">${r.fecha} · ${r.modo==='foot'?'🚶':'🚗'} · ${r.paradas.length} paradas${r.distancia_total?' · '+r.distancia_total+'km':''}</div>
     </div>`).join('');
 }
 
-function recAbrirVisita(idx){
-  // cerrar cualquier form abierto
-  document.querySelectorAll('[id^="rec-form-"]').forEach(el=>el.style.display='none');
-  const f=document.getElementById('rec-form-'+idx);
-  if(f){f.style.display='';const n=document.getElementById('rec-nota-'+idx);if(n)n.focus();}
+function recToggleGuardados(){
+  const div=document.getElementById('rec-guardados');
+  const btn=document.getElementById('rec-guardados-toggle');
+  const v=div.style.display!=='none';
+  div.style.display=v?'none':'';
+  btn.textContent=`📋 Guardados ${v?'▾':'▴'}`;
 }
 
-function recSetNota(idx,texto){
-  const n=document.getElementById('rec-nota-'+idx);
-  if(n){n.value=texto;n.focus();}
-}
-
-async function recRegistrarVisita(idx){
-  const pid=idx==='start'?recInicio.place_id:(recRutaData&&recRutaData.orden[idx]?recRutaData.orden[idx].place_id:null);
-  if(!pid){alert('Sin place_id para registrar');return;}
-  const nota=(document.getElementById('rec-nota-'+idx)||{}).value?.trim();
-  if(!nota){document.getElementById('rec-nota-'+idx).focus();return;}
-  const fecha=(document.getElementById('rec-fecha-'+idx)||{}).value||new Date().toISOString().slice(0,10);
-  const {error}=await sb.from('lead_eventos').insert({place_id:pid,nota,fecha});
-  if(error){alert('Error: '+error.message);return;}
-  // marcar fila como visitada
-  const row=document.getElementById('rec-row-'+idx);
-  if(row){row.style.background='#f0fff4';}
-  const btn=document.getElementById('rec-vis-btn-'+idx);
-  if(btn){btn.textContent='✓ Visitado';btn.style.background='#217346';btn.style.color='#fff';btn.style.borderColor='#217346';btn.disabled=true;btn.onclick=null;}
-  document.getElementById('rec-form-'+idx).style.display='none';
+function recTogglePanel(){
+  document.getElementById('rec-panel').classList.toggle('collapsed');
 }
 
 async function recCargar(id){
@@ -1773,11 +2010,9 @@ async function recCargar(id){
   if(error||!data) return;
   recInicio=data.punto_inicio;
   recShowInicio();
-  recInicio=data.punto_inicio;
-  recShowInicio();
-  document.getElementById('rec-cantidad').value=data.paradas.length;
-  recModo=data.modo;recSetModo(recModo);
-  alert(`Recorrido "${data.nombre}" cargado. Presioná "Sugerir recorrido" para ver la ruta.`);
+  recOrden=data.paradas.sort((a,b)=>a.orden-b.orden).map(p=>allLeads.find(l=>l.place_id===p.place_id)||p);
+  recModo=data.modo; recSetModo(recModo);
+  await recRenderizarRuta(recOrden,false);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
