@@ -1268,18 +1268,18 @@ async function exportXLSX(){
     views:[{state:'frozen',xSplit:0,ySplit:1}]
   });
 
-  // Definir columnas con ancho
+  // Columnas — Barrio inmediatamente después de Dirección
   ws.columns=[
     {header:'Nombre',           key:'nombre',         width:38},
     {header:'WhatsApp',         key:'whatsapp',       width:20},
     {header:'Teléfono',         key:'telefono',       width:16},
     {header:'Dirección',        key:'direccion',      width:46},
+    {header:'Barrio',           key:'barrio',         width:16},
     {header:'Email',            key:'email',          width:32},
     {header:'Email 2',          key:'email_2',        width:28},
     {header:'Instagram',        key:'instagram',      width:20},
     {header:'Facebook',         key:'facebook',       width:20},
     {header:'Sitio web',        key:'sitio_web',      width:30},
-    {header:'Barrio',           key:'barrio',         width:16},
     {header:'Nota Google',      key:'google_nota',    width:10},
     {header:'Reseñas',          key:'google_resenas', width:10},
     {header:'Precio',           key:'precio',         width:10},
@@ -1309,12 +1309,12 @@ async function exportXLSX(){
       whatsapp:     l.whatsapp||'',
       telefono:     l.telefono||'',
       direccion:    l.direccion||'',
+      barrio:       l.barrio||'',
       email:        l.email||'',
       email_2:      l.email_2||'',
       instagram:    l.instagram||'',
       facebook:     l.facebook||'',
       sitio_web:    l.sitio_web||'',
-      barrio:       l.barrio||'',
       google_nota:  l.google_nota||'',
       google_resenas: l.google_resenas||'',
       precio:       l.precio||'',
@@ -1330,12 +1330,9 @@ async function exportXLSX(){
       cell.border={bottom:{style:'thin',color:{argb:'FFEEEEEE'}}};
       cell.alignment={vertical:'middle'};
     });
-    // Email en azul si tiene valor
     if(l.email){const c=row.getCell('email');c.font={color:{argb:'FF1A56DB'}};}
     if(l.email_2){const c=row.getCell('email_2');c.font={color:{argb:'FF1A56DB'}};}
-    // WA en verde
     if(l.whatsapp){const c=row.getCell('whatsapp');c.font={color:{argb:'FF1E7E34'}};}
-    // Cliente badge
     if(l.cliente_eurocrem==='S'){
       const c=row.getCell('cliente');
       c.font={bold:true,color:{argb:'FF2E7D32'}};
