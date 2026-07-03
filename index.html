@@ -245,6 +245,96 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   #rec-panel.collapsed{max-height:158px;overflow:hidden}
   .rec-drag-handle{display:flex}
 }
+/* ══ CLIENTES CLAUDIO TAB ═══════════════════════════════════════════════════ */
+#screen-claudio{display:none;flex:1;overflow:hidden;flex-direction:column}
+#cc-toolbar{background:#fff;border-bottom:1px solid #e0e0e0;padding:6px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+#cc-search-box{padding:5px 8px;border:1px solid #ddd;border-radius:5px;font-size:12px;max-width:200px;outline:none}
+#cc-search-box:focus{border-color:#4c9be8}
+.cc-sel{padding:4px 8px;border:1px solid #ddd;border-radius:5px;font-size:12px;background:#fff;cursor:pointer}
+#cc-count-badge{font-size:12px;color:#999;white-space:nowrap}
+#cc-toast{margin-left:auto;font-size:12px;color:#217346;font-weight:500;opacity:0;transition:opacity .3s}
+#cc-toast.error{color:#c0392b}
+#cc-toast.show{opacity:1}
+#cc-main{display:flex;flex:1;overflow:hidden}
+#cc-table-wrap{flex:1;overflow:auto;background:#fff}
+#cc-grid{border-collapse:collapse;min-width:100%;font-size:12.5px}
+#cc-grid thead th{position:sticky;top:0;z-index:3;background:#f5f7fa;color:#444;font-weight:600;padding:7px 8px;border:1px solid #d0d4da;white-space:nowrap;user-select:none;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px}
+#cc-grid thead th:first-child{z-index:4;left:0}
+#cc-grid thead th.sorted-asc::after{content:' ↑';color:#4c9be8}
+#cc-grid thead th.sorted-desc::after{content:' ↓';color:#4c9be8}
+#cc-grid thead th:not(.no-sort){cursor:pointer}
+#cc-grid thead th:not(.no-sort):hover{background:#eaecf0}
+#cc-grid th.rn,#cc-grid td.rn{position:sticky;left:0;z-index:2;background:#f5f7fa;color:#aaa;font-size:11px;text-align:right;padding:0 6px;min-width:36px;max-width:36px;width:36px;border-right:2px solid #c8cdd4}
+#cc-grid td.rn{background:#fafbfc}
+#cc-grid tr:hover td.rn{background:#f0f2f5}
+#cc-grid th.col-nombre,#cc-grid td.col-nombre{position:sticky;left:36px;z-index:2;background:#fff;min-width:180px;max-width:180px;width:180px;border-right:2px solid #c8cdd4;font-weight:500}
+#cc-grid thead th.col-nombre{background:#f5f7fa;z-index:4}
+#cc-grid tr:hover td.col-nombre{background:#f9f9f9}
+#cc-grid td{padding:0;border:1px solid #e8eaed;vertical-align:middle;height:32px}
+#cc-grid .cell-val{padding:5px 8px;min-height:32px;display:flex;align-items:center;cursor:cell;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+#cc-grid .cell-val:hover{background:rgba(66,133,244,.06)}
+#cc-grid td.editing .cell-val{display:none}
+#cc-grid td input.cell-input,#cc-grid td textarea.cell-input{width:100%;height:100%;min-height:32px;padding:5px 8px;border:2px solid #4c9be8;border-radius:0;outline:none;font-family:inherit;font-size:12.5px;background:#fffde7;resize:none;overflow:hidden}
+#cc-grid tr:hover td{background:rgba(0,0,0,.03)!important}
+#cc-grid tr.saving td{background:#fff8e1!important}
+#cc-grid tr.saved td{background:#f0fff4!important}
+#cc-grid tr.error-row td{background:#fff5f5!important}
+#cc-grid tr.res-negativo .cell-val{color:#c0392b}
+#cc-grid tr.res-negativo td.col-nombre .cell-val{color:#c0392b;font-weight:600}
+#cc-grid tr.res-nuevo .cell-val{color:#7b1fa2}
+#cc-grid tr.res-nuevo td.col-nombre .cell-val{color:#7b1fa2;font-weight:600}
+#cc-grid tr.row-activo td{background:#d8e8ff!important}
+#cc-grid tr.row-activo td.rn{background:#a8c8f5!important;color:#1a73e8!important;font-weight:700;border-right:3px solid #4c9be8!important}
+#cc-grid tr.row-activo td.col-nombre{background:#d8e8ff!important;border-left:3px solid #4c9be8!important}
+#cc-grid tr.enlazar-activo td{background:#fff3cd!important}
+#cc-grid tr.enlazar-activo td.rn{background:#ffd54f!important;color:#e65100!important;font-weight:700;border-right:3px solid #e65100!important}
+#cc-grid tr.enlazar-activo td.col-nombre{background:#fff3cd!important;border-left:3px solid #e65100!important}
+#cc-grid td.col-leads{text-align:center;min-width:90px;width:90px}
+#cc-grid th.col-leads{min-width:90px;width:90px;text-align:center}
+/* Columnas angostas para que la tabla entre en el viewport */
+#cc-grid th:nth-child(3),#cc-grid td:nth-child(3){width:108px;min-width:108px;max-width:108px}
+#cc-grid th:nth-child(4),#cc-grid td:nth-child(4){width:100px;min-width:100px;max-width:100px}
+#cc-grid th:nth-child(5),#cc-grid td:nth-child(5){width:150px;min-width:150px;max-width:150px}
+#cc-grid th:nth-child(6),#cc-grid td:nth-child(6){width:76px;min-width:76px;max-width:76px}
+#cc-grid th:nth-child(7),#cc-grid td:nth-child(7){width:84px;min-width:84px;max-width:84px}
+#cc-grid th:nth-child(8),#cc-grid td:nth-child(8){width:80px;min-width:80px;max-width:80px}
+#cc-grid th:nth-child(9),#cc-grid td:nth-child(9){width:58px;min-width:58px;max-width:58px}
+#cc-grid th:nth-child(10),#cc-grid td:nth-child(10){width:58px;min-width:58px;max-width:58px}
+#cc-grid th:nth-child(11),#cc-grid td:nth-child(11){width:58px;min-width:58px;max-width:58px}
+#cc-grid th:nth-child(12),#cc-grid td:nth-child(12){width:78px;min-width:78px;max-width:78px}
+#screen-claudio .cc-lead-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:#e8f0fe;color:#1a73e8;border:1px solid #c5d9f7;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+#screen-claudio .cc-lead-btn:hover{background:#d2e3fc}
+#screen-claudio .cc-enlazar-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+#screen-claudio .cc-enlazar-btn:hover{background:#ffe0b2}
+#screen-claudio .cc-no-link{display:inline-block;width:8px;height:8px;border-radius:50%;background:#dee2e6;margin:auto}
+#screen-claudio .cc-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600}
+#screen-claudio .cc-b-red{background:#e53935;color:#fff}
+#screen-claudio .cc-b-violet{background:#7b1fa2;color:#fff}
+#screen-claudio .cc-b-gray{background:transparent;color:#333;font-weight:400}
+#cc-panel{width:320px;min-width:280px;background:#fff;border-left:1px solid #e0e0e0;display:none;flex-direction:column;overflow-y:auto;flex-shrink:0}
+#cc-panel.open{display:flex}
+#cc-panel-hdr{background:#1e2a3a;color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+#cc-panel-hdr h2{font-size:14px;font-weight:600;flex:1;margin:0}
+#cc-panel-close{background:none;border:none;color:#8fa3b8;font-size:20px;cursor:pointer;line-height:1;padding:0}
+#cc-panel-close:hover{color:#fff}
+#cc-panel-foto{width:100%;height:160px;object-fit:cover;background:#f0f2f5;display:block;flex-shrink:0}
+#cc-panel-foto.hidden{display:none}
+#cc-panel-body{padding:16px;flex:1}
+#cc-panel .lp-name{font-size:16px;font-weight:700;color:#1e2a3a;margin-bottom:4px}
+#cc-panel .lp-barrio{font-size:12px;color:#666;margin-bottom:14px}
+#cc-panel .lp-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0}
+#cc-panel .lp-row:last-child{border-bottom:none}
+#cc-panel .lp-icon{font-size:16px;width:22px;flex-shrink:0;margin-top:1px}
+#cc-panel .lp-val{font-size:13px;color:#333;line-height:1.4;word-break:break-word}
+#cc-panel .lp-val a{color:#1a73e8;text-decoration:none}
+#cc-panel .lp-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#999;margin:14px 0 6px}
+#cc-panel .lp-nota{display:flex;align-items:center;gap:6px;font-size:13px}
+#cc-panel .lp-stars{color:#f4a822}
+@media(max-width:768px){
+  #cc-panel{width:100%;position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;border:none}
+  #cc-panel.open{display:flex}
+  #cc-search-box{max-width:130px}
+}
 </style>
 </head>
 <body>
@@ -255,6 +345,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   <div class="nav-tab" onclick="showScreen('dashboard')">Dashboard</div>
   <div class="nav-tab" onclick="showScreen('email')">✉ Email</div>
   <div class="nav-tab" onclick="showScreen('recorridos')">🗺 Recorridos</div>
+  <div class="nav-tab" onclick="showScreen('claudio')">👥 Claudio</div>
   <div id="save-banner">
     <span>⚠ Cambios sin guardar</span>
     <button onclick="saveLead()">Guardar</button>
@@ -295,7 +386,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
           <option value="S">✅ Clientes Eurocrem</option>
           <option value="N">🆕 Prospectos nuevos</option>
         </select>
-        <button id="btn-excel-mobile" onclick="exportXLSX()" style="flex-shrink:0;padding:5px 8px;background:#217346;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">⬇ Excel</button>
+        <button id="btn-excel-mobile" onclick="exportXLSX()" style="flex-shrink:0;padding:5px 8px;background:#217346;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">⬇ Google Sheet</button>
       </div>
       <div id="lead-count">Cargando...</div>
     </div>
@@ -567,6 +658,65 @@ Si querés conocer nuestro catálogo o recibir una cotización sin compromiso, c
 
   </div>
 </div>
+<!-- ══ CLIENTES CLAUDIO ════════════════════════════════════════════════════ -->
+<div id="screen-claudio">
+  <div id="cc-toolbar">
+    <input id="cc-search-box" type="search" placeholder="Buscar…" autocomplete="off">
+    <select class="cc-sel" id="cc-fil-resultado">
+      <option value="">Resultado: todos</option>
+      <option value="CLIENTE NUEVO">Cliente nuevo</option>
+      <option value="NEGATIVO">Negativo</option>
+      <option value="ME AVISA">Me avisa</option>
+      <option value="PASAR">Pasar</option>
+      <option value="INTERESADO">Interesado</option>
+    </select>
+    <select class="cc-sel" id="cc-fil-match">
+      <option value="">Leads: todos</option>
+      <option value="si">Con lead vinculado</option>
+      <option value="enlazar">Pendientes enlace</option>
+      <option value="no">Sin lead</option>
+    </select>
+    <span id="cc-count-badge"></span>
+    <button class="nav-btn" style="background:#217346;color:#fff;font-size:12px" id="cc-btn-export">📊 Google Sheet</button>
+    <button class="nav-btn primary" style="font-size:12px" id="cc-btn-add">+ Nuevo</button>
+    <span id="cc-toast"></span>
+  </div>
+  <div id="cc-main">
+    <div id="cc-table-wrap">
+      <table id="cc-grid">
+        <thead>
+          <tr>
+            <th class="rn no-sort">#</th>
+            <th class="col-nombre" data-col="nombre">Nombre</th>
+            <th data-col="telefono">Teléfono</th>
+            <th data-col="contacto">Contacto</th>
+            <th data-col="direccion">Dirección</th>
+            <th data-col="fecha_ingreso">F. Ingreso</th>
+            <th data-col="resultado">Resultado</th>
+            <th data-col="proveedores">Proveedores</th>
+            <th data-col="listas_precio">Listas $</th>
+            <th data-col="muestras">Muestras</th>
+            <th data-col="freezer">Freezer</th>
+            <th data-col="fecha_llamar">F. Llamar</th>
+            <th class="col-leads no-sort">Leads</th>
+          </tr>
+        </thead>
+        <tbody id="cc-tbody"></tbody>
+      </table>
+    </div>
+    <div id="cc-panel">
+      <div id="cc-panel-hdr">
+        <h2 id="cc-panel-title">Lead</h2>
+        <button id="cc-panel-close">✕</button>
+      </div>
+      <img id="cc-panel-foto" class="hidden" alt="foto">
+      <div id="cc-panel-body">
+        <div style="color:#bbb;font-style:italic;font-size:12px">Seleccioná un cliente con lead vinculado</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <script>
 const SUPABASE_URL='https://crbmgsmmvfkbxrplqfkl.supabase.co';
@@ -666,10 +816,14 @@ function showScreen(s){
   document.getElementById('screen-dashboard').style.display=s==='dashboard'?'flex':'none';
   document.getElementById('screen-email').style.display=s==='email'?'flex':'none';
   document.getElementById('screen-recorridos').style.display=s==='recorridos'?'flex':'none';
-  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&s==='leads')||(i===1&&s==='dashboard')||(i===2&&s==='email')||(i===3&&s==='recorridos')));
+  document.getElementById('screen-claudio').style.display=s==='claudio'?'flex':'none';
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',
+    (i===0&&s==='leads')||(i===1&&s==='dashboard')||(i===2&&s==='email')||(i===3&&s==='recorridos')||(i===4&&s==='claudio')
+  ));
   if(s==='dashboard') buildDashboard();
   if(s==='recorridos'){initRecMap();loadRecorridos();}
   if(s==='email') initEmailScreen();
+  if(s==='claudio') cc_init();
   if(s==='leads'&&mapInstance) setTimeout(()=>mapInstance.invalidateSize(),50);
 }
 
@@ -1248,6 +1402,10 @@ async function exportXLSX(){
   const leads=getFiltered();
   if(!leads.length){ alert('No hay leads con los filtros actuales.'); return; }
 
+  // Cargar clientes Claudio para columna de cruce
+  const{data:ccData}=await sb.from('clientes_claudio').select('place_id,nombre').not('place_id','is',null);
+  const ccMap=new Map(ccData?.filter(c=>c.place_id).map(c=>[c.place_id,c.nombre])||[]);
+
   // Nombre del archivo
   const parts=['leads'];
   const barrio=document.getElementById('filter-barrio').value;
@@ -1268,8 +1426,9 @@ async function exportXLSX(){
     views:[{state:'frozen',xSplit:0,ySplit:1}]
   });
 
-  // Columnas — Barrio inmediatamente después de Dirección
+  // Columnas — Cliente Claudio primero
   ws.columns=[
+    {header:'Cliente Claudio',  key:'claudio',        width:22},
     {header:'Nombre',           key:'nombre',         width:38},
     {header:'WhatsApp',         key:'whatsapp',       width:20},
     {header:'Teléfono',         key:'telefono',       width:16},
@@ -1322,6 +1481,7 @@ async function exportXLSX(){
       cliente:      l.cliente_eurocrem||'N',
       origen:       l.origen_contacto||'',
       notas_internas: l.notas_internas||'',
+      claudio: ccMap.has(l.place_id) ? (ccMap.get(l.place_id)||'Sí') : '',
     });
     row.height=16;
     const fillColor=i%2===0?'FFFAFAFA':'FFFFFFFF';
@@ -1336,6 +1496,10 @@ async function exportXLSX(){
     if(l.cliente_eurocrem==='S'){
       const c=row.getCell('cliente');
       c.font={bold:true,color:{argb:'FF2E7D32'}};
+    }
+    if(ccMap.has(l.place_id)){
+      const c=row.getCell('claudio');
+      c.font={bold:true,color:{argb:'FF1565C0'}};
     }
   });
 
@@ -2014,12 +2178,339 @@ async function recCargar(id){
 
 // ══════════════════════════════════════════════════════════════════════════════
 
-loadLeads();
-_initEmailDraftListeners();
+// ══ CLIENTES CLAUDIO TAB ═════════════════════════════════════════════════════
+let cc_rows=[],cc_sortCol=null,cc_sortDir=1;
+let cc_filterRes='',cc_filterMatch='',cc_searchStr='';
+let cc_activeInput=null,cc_currentEnlazarId=null;
+let cc_inited=false,cc_toastTimer;
+const CC_DATE=new Set(['fecha_ingreso','fecha_llamar']);
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+function cc_init(){
+  if(cc_inited)return;
+  cc_inited=true;
+  document.getElementById('cc-search-box').addEventListener('input',e=>{cc_searchStr=e.target.value;cc_render();});
+  document.getElementById('cc-fil-resultado').addEventListener('change',e=>{cc_filterRes=e.target.value;cc_render();});
+  document.getElementById('cc-fil-match').addEventListener('change',e=>{cc_filterMatch=e.target.value;cc_render();});
+  document.getElementById('cc-btn-export').addEventListener('click',cc_export);
+  document.getElementById('cc-btn-add').addEventListener('click',cc_addCliente);
+  document.getElementById('cc-tbody').addEventListener('click',cc_onClick);
+  document.getElementById('cc-panel-close').addEventListener('click',()=>{
+    document.getElementById('cc-panel').classList.remove('open');
+    cc_setEnlazarActivo(null);
+  });
+  document.querySelectorAll('#cc-grid thead th[data-col]').forEach(th=>{
+    th.addEventListener('click',()=>{
+      const col=th.dataset.col;
+      cc_sortDir=(cc_sortCol===col)?cc_sortDir*-1:1;
+      cc_sortCol=col;
+      document.querySelectorAll('#cc-grid thead th').forEach(t=>t.classList.remove('sorted-asc','sorted-desc'));
+      th.classList.add(cc_sortDir===1?'sorted-asc':'sorted-desc');
+      cc_render();
+    });
+  });
+  cc_load();
 }
-</script>
-</body>
-</html>
+
+function cc_esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function cc_fmtDate(v){if(!v)return'';const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);if(!m)return cc_esc(String(v));return`${m[3]}/${m[2]}/${m[1]}`;}
+
+async function cc_load(){
+  const{data,error}=await sb.from('clientes_claudio')
+    .select('id,nombre,telefono,contacto,direccion,fecha_ingreso,resultado,proveedores,listas_precio,muestras,freezer,fecha_llamar,place_id,apify_buscado_at')
+    .order('nombre');
+  if(error){cc_toast('Error cargando datos',true);return;}
+  cc_rows=data;cc_render();
+}
+
+function cc_visible(){
+  let rows=cc_rows;
+  if(cc_searchStr){
+    const q=cc_searchStr.toLowerCase();
+    rows=rows.filter(r=>(r.nombre||'').toLowerCase().includes(q)||(r.telefono||'').toLowerCase().includes(q)||(r.contacto||'').toLowerCase().includes(q)||(r.direccion||'').toLowerCase().includes(q));
+  }
+  if(cc_filterRes)rows=rows.filter(r=>(r.resultado||'').toUpperCase().includes(cc_filterRes));
+  if(cc_filterMatch==='si')      rows=rows.filter(r=>r.place_id);
+  if(cc_filterMatch==='enlazar') rows=rows.filter(r=>!r.place_id&&r.apify_buscado_at);
+  if(cc_filterMatch==='no')      rows=rows.filter(r=>!r.place_id);
+  if(cc_sortCol){
+    rows=[...rows].sort((a,b)=>{
+      const av=(a[cc_sortCol]||'').toString().toLowerCase(),bv=(b[cc_sortCol]||'').toString().toLowerCase();
+      return av<bv?-cc_sortDir:av>bv?cc_sortDir:0;
+    });
+  }
+  return rows;
+}
+
+function cc_rowClass(res){
+  if(!res)return'';
+  const v=res.toUpperCase();
+  if(v.includes('NEGATIVO')||v.includes('NRGATIVO'))return'res-negativo';
+  if(v.includes('CLIENTE NUEVO'))return'res-nuevo';
+  return'';
+}
+function cc_badge(val){
+  if(!val)return'';
+  const v=val.toUpperCase();
+  let cls='cc-b-gray';
+  if(v.includes('CLIENTE NUEVO'))cls='cc-b-violet';
+  else if(v.includes('NEGATIVO')||v.includes('NRGATIVO'))cls='cc-b-red';
+  return`<span class="cc-badge ${cls}">${cc_esc(val)}</span>`;
+}
+function cc_cellHtml(col,val){
+  if(!val)return'';
+  if(col==='resultado')return cc_badge(val);
+  if(CC_DATE.has(col))return cc_fmtDate(val);
+  return cc_esc(val);
+}
+
+function cc_render(){
+  const rows=cc_visible();
+  document.getElementById('cc-count-badge').textContent=`${rows.length} / ${cc_rows.length}`;
+  const frag=document.createDocumentFragment();
+  rows.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.dataset.id=r.id;
+    const rc=cc_rowClass(r.resultado);if(rc)tr.classList.add(rc);
+    const tdRn=document.createElement('td');tdRn.className='rn';tdRn.textContent=i+1;tr.appendChild(tdRn);
+    cc_td(tr,r,'nombre','col-nombre');
+    ['telefono','contacto','direccion','fecha_ingreso','resultado','proveedores','listas_precio','muestras','freezer','fecha_llamar'].forEach(c=>cc_td(tr,r,c));
+    const tdL=document.createElement('td');tdL.className='col-leads';
+    if(r.place_id){
+      tdL.innerHTML=`<button class="cc-lead-btn" data-pid="${cc_esc(r.place_id)}">&#x1F517; Ver lead</button>`;
+    }else if(r.apify_buscado_at){
+      tdL.innerHTML=`<button class="cc-enlazar-btn" data-cid="${r.id}" data-nombre="${cc_esc(r.nombre||'')}" data-dir="${cc_esc(r.direccion||'')}">&#x1F50D; Enlazar</button>`;
+    }else{
+      tdL.innerHTML=`<span class="cc-no-link" title="Sin lead vinculado"></span>`;
+    }
+    tr.appendChild(tdL);frag.appendChild(tr);
+  });
+  document.getElementById('cc-tbody').innerHTML='';
+  document.getElementById('cc-tbody').appendChild(frag);
+}
+
+function cc_td(tr,r,col,extra=''){
+  const td=document.createElement('td');if(extra)td.className=extra;
+  td.dataset.col=col;td.dataset.id=r.id;
+  const div=document.createElement('div');div.className='cell-val';
+  div.innerHTML=cc_cellHtml(col,r[col]);td.appendChild(div);tr.appendChild(td);
+}
+
+function cc_setRowActivo(tr){
+  document.querySelectorAll('#cc-tbody tr.row-activo').forEach(x=>x.classList.remove('row-activo'));
+  if(tr)tr.classList.add('row-activo');
+}
+function cc_setEnlazarActivo(id){
+  document.querySelectorAll('#cc-tbody tr.enlazar-activo').forEach(x=>x.classList.remove('enlazar-activo'));
+  if(id){const tr=document.querySelector(`#cc-tbody tr[data-id="${id}"]`);if(tr){tr.classList.add('enlazar-activo');tr.scrollIntoView({block:'nearest',behavior:'smooth'});}}
+}
+
+function cc_startEdit(td){
+  if(!td.dataset.col)return;
+  if(cc_activeInput)cc_commitEdit(cc_activeInput);
+  const col=td.dataset.col,id=parseInt(td.dataset.id);
+  cc_setRowActivo(td.closest('tr'));
+  const row=cc_rows.find(r=>r.id===id);
+  const curVal=row?(row[col]||''):'';
+  const isML=['direccion','proveedores','resultado','muestras'].includes(col);
+  const isDate=CC_DATE.has(col);
+  const inp=document.createElement(isML?'textarea':'input');
+  inp.className='cell-input';inp.dataset.col=col;inp.dataset.id=id;inp.dataset.orig=curVal;
+  if(isDate){inp.type='date';inp.value=curVal?curVal.slice(0,10):'';}
+  else if(!isML){inp.type='text';inp.value=curVal;}
+  else inp.value=curVal;
+  td.classList.add('editing');td.appendChild(inp);inp.focus();
+  if(!isDate)inp.select();
+  cc_activeInput=inp;
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){cc_cancelEdit(inp);return;}
+    if(!isML&&e.key==='Enter'){cc_commitEdit(inp);e.preventDefault();return;}
+    if(e.key==='Tab'){
+      cc_commitEdit(inp);e.preventDefault();
+      const all=[...document.querySelectorAll('#cc-grid td[data-col]')];
+      const next=all[all.indexOf(td)+(e.shiftKey?-1:1)];
+      if(next)cc_startEdit(next);
+    }
+  });
+  inp.addEventListener('blur',()=>{if(cc_activeInput===inp)cc_commitEdit(inp);});
+}
+function cc_cancelEdit(inp){
+  inp.parentElement.classList.remove('editing');inp.remove();cc_activeInput=null;cc_setRowActivo(null);
+}
+async function cc_commitEdit(inp){
+  const td=inp.parentElement;
+  const col=inp.dataset.col,id=parseInt(inp.dataset.id);
+  const newVal=inp.value.trim()||null,orig=inp.dataset.orig||null;
+  td.classList.remove('editing');inp.remove();cc_activeInput=null;
+  if(newVal===orig||(!newVal&&!orig))return;
+  const row=cc_rows.find(r=>r.id===id);if(row)row[col]=newVal;
+  const div=td.querySelector('.cell-val');if(div)div.innerHTML=cc_cellHtml(col,newVal);
+  const tr=td.closest('tr');tr.classList.add('saving');
+  const{error}=await sb.from('clientes_claudio').update({[col]:newVal}).eq('id',id);
+  tr.classList.remove('saving');
+  if(error){
+    cc_toast('Error al guardar',true);tr.classList.add('error-row');
+    setTimeout(()=>tr.classList.remove('error-row'),2000);
+    if(row)row[col]=orig;if(div)div.innerHTML=cc_cellHtml(col,orig);
+  }else{
+    tr.classList.add('saved');setTimeout(()=>tr.classList.remove('saved'),1000);cc_toast('Guardado ✓');
+  }
+}
+
+async function cc_openLead(placeId){
+  const panel=document.getElementById('cc-panel');
+  const body=document.getElementById('cc-panel-body');
+  const foto=document.getElementById('cc-panel-foto');
+  const title=document.getElementById('cc-panel-title');
+  panel.classList.add('open');
+  body.innerHTML='<div style="color:#bbb;font-style:italic;font-size:12px">Cargando…</div>';
+  foto.classList.add('hidden');title.textContent='Lead';
+  const{data,error}=await sb.from('leads')
+    .select('nombre,barrio,direccion,telefono,whatsapp,link_wame,email,email_2,instagram,link_ig,sitio_web,foto_url,google_nota,google_resenas,categoria')
+    .eq('place_id',placeId).single();
+  if(error||!data){body.innerHTML='<div style="color:#bbb;font-style:italic;font-size:12px">No se encontró el lead.</div>';return;}
+  title.textContent=data.nombre||'Lead';
+  if(data.foto_url){foto.src=data.foto_url;foto.classList.remove('hidden');}
+  const row=(icon,html)=>html?`<div class="lp-row"><div class="lp-icon">${icon}</div><div class="lp-val">${html}</div></div>`:'';
+  const tel=v=>v?`<a href="tel:${cc_esc(v)}">${cc_esc(v)}</a>`:'';
+  const lnk=(url,lbl)=>url?`<a href="${cc_esc(url)}" target="_blank">${cc_esc(lbl||url)}</a>`:'';
+  const waUrl=data.link_wame||(data.whatsapp?`https://wa.me/${data.whatsapp.replace(/\D/g,'')}`:'');
+  const igUrl=data.link_ig||(data.instagram?`https://instagram.com/${data.instagram.replace('@','')}`:'');
+  let stars='';
+  if(data.google_nota){const f=Math.round(data.google_nota);stars='★'.repeat(f)+'☆'.repeat(5-f);}
+  body.innerHTML=`
+    <div class="lp-name">${cc_esc(data.nombre)}</div>
+    <div class="lp-barrio">${[data.categoria,data.barrio].filter(Boolean).map(cc_esc).join(' \xb7 ')}</div>
+    <div class="lp-section">Contacto</div>
+    ${row('📍',cc_esc(data.direccion))}
+    ${row('📞',tel(data.telefono))}
+    ${row('💬',waUrl?lnk(waUrl,data.whatsapp||data.link_wame):'')}
+    ${row('✉️',data.email?`<a href="mailto:${cc_esc(data.email)}">${cc_esc(data.email)}</a>`:'')}
+    ${data.email_2?row('✉️',`<a href="mailto:${cc_esc(data.email_2)}">${cc_esc(data.email_2)}</a>`):''}
+    ${row('📸',igUrl?lnk(igUrl,data.instagram||'Ver perfil'):'')}
+    ${row('🌐',data.sitio_web?lnk(data.sitio_web,data.sitio_web):'')}
+    ${data.google_nota?`<div class="lp-section">Google</div><div class="lp-row"><div class="lp-icon">⭐</div><div class="lp-val lp-nota"><span class="lp-stars">${stars}</span> ${data.google_nota} · ${data.google_resenas||0} reseñas</div></div>`:''}
+  `;
+}
+
+async function cc_openEnlazar(clienteId,nombreClaudio,dirClaudio){
+  const panel=document.getElementById('cc-panel');
+  const body=document.getElementById('cc-panel-body');
+  const foto=document.getElementById('cc-panel-foto');
+  const title=document.getElementById('cc-panel-title');
+  cc_currentEnlazarId=clienteId;
+  cc_setEnlazarActivo(clienteId);
+  panel.classList.add('open');foto.classList.add('hidden');
+  title.textContent='Enlazar cliente';
+  body.innerHTML='<div style="color:#bbb;font-style:italic;font-size:12px">Buscando…</div>';
+  const palabras=(nombreClaudio||'').trim().split(/\s+/).slice(0,3);
+  let sug=[];
+  for(const p of palabras){
+    if(p.length<3)continue;
+    const{data}=await sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota').ilike('nombre',`%${p}%`).limit(6);
+    if(data)sug.push(...data);
+  }
+  if(dirClaudio){
+    const num=(dirClaudio.match(/\d+/)||[])[0];
+    if(num){const{data}=await sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota').ilike('direccion',`%${num}%`).limit(4);if(data)sug.push(...data);}
+  }
+  const seen=new Set();
+  sug=sug.filter(s=>{if(seen.has(s.place_id))return false;seen.add(s.place_id);return true;}).slice(0,8);
+  let html=`<div class="lp-section">Cliente Claudio</div>
+    <div class="lp-row"><div class="lp-icon">👤</div><div class="lp-val"><strong>${cc_esc(nombreClaudio)}</strong></div></div>
+    ${dirClaudio?`<div class="lp-row"><div class="lp-icon">📍</div><div class="lp-val">${cc_esc(dirClaudio)}</div></div>`:''}
+    <div class="lp-section">Sugerencias${sug.length?' ('+sug.length+')':''}</div>`;
+  if(!sug.length){
+    html+=`<div style="color:#bbb;font-style:italic;font-size:12px">Sin coincidencias. Buscar en leads manualmente.</div>`;
+  }else{
+    sug.forEach(s=>{
+      let stars='';
+      if(s.google_nota){const f=Math.round(s.google_nota);stars=`<span class="lp-stars">${'★'.repeat(f)}${'☆'.repeat(5-f)}</span> ${s.google_nota} `;}
+      html+=`<div style="border:1px solid #e0e0e0;border-radius:8px;padding:10px;margin-bottom:8px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:3px">${cc_esc(s.nombre)}</div>
+        ${s.direccion?`<div style="font-size:12px;color:#555;margin-bottom:2px">📍 ${cc_esc(s.direccion)}</div>`:''}
+        ${s.barrio?`<div style="font-size:12px;color:#888;margin-bottom:6px">🏘 ${cc_esc(s.barrio)}</div>`:''}
+        ${s.google_nota?`<div style="font-size:12px;margin-bottom:6px">${stars}</div>`:''}
+        <button class="cc-confirm-btn" data-pid="${cc_esc(s.place_id)}"
+          style="width:100%;padding:7px;background:#1a73e8;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer">✓ Este es</button>
+      </div>`;
+    });
+  }
+  body.innerHTML=html;
+  body.querySelectorAll('.cc-confirm-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>cc_confirmLink(btn.dataset.pid,btn));
+  });
+}
+
+async function cc_confirmLink(placeId,btn){
+  if(!cc_currentEnlazarId)return;
+  if(btn){btn.disabled=true;btn.textContent='Guardando…';}
+  const{error}=await sb.from('clientes_claudio').update({place_id:placeId}).eq('id',cc_currentEnlazarId);
+  if(error){cc_toast('Error al enlazar',true);if(btn){btn.disabled=false;btn.textContent='✓ Este es';}return;}
+  const row=cc_rows.find(r=>r.id===cc_currentEnlazarId);if(row)row.place_id=placeId;
+  document.getElementById('cc-panel').classList.remove('open');
+  cc_toast('Enlazado ✓');cc_render();
+}
+
+function cc_onClick(e){
+  const lb=e.target.closest('.cc-lead-btn');if(lb){cc_openLead(lb.dataset.pid);return;}
+  const eb=e.target.closest('.cc-enlazar-btn');if(eb){cc_openEnlazar(parseInt(eb.dataset.cid),eb.dataset.nombre,eb.dataset.dir);return;}
+  const td=e.target.closest('#cc-tbody td[data-col]');if(td&&!td.classList.contains('editing'))cc_startEdit(td);
+}
+
+async function cc_export(){
+  const rows=cc_visible();
+  const placeIds=rows.filter(r=>r.place_id).map(r=>r.place_id);
+  const leadMap=new Map();
+  if(placeIds.length){
+    const{data:ld}=await sb.from('leads').select('place_id,nombre,direccion,whatsapp,telefono,sitio_web,instagram').in('place_id',placeIds);
+    if(ld)ld.forEach(l=>leadMap.set(l.place_id,l));
+  }
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet('Clientes Claudio');
+  ws.columns=[
+    {header:'NOMBRE',key:'nombre',width:28},{header:'TELEFONO',key:'telefono',width:18},
+    {header:'CONTACTO',key:'contacto',width:16},{header:'DIRECCION',key:'direccion',width:32},
+    {header:'FECHA INGRESO',key:'fecha_ing',width:14},{header:'RESULTADO',key:'resultado',width:18},
+    {header:'PROVEEDORES',key:'proveedores',width:24},{header:'LISTAS $',key:'listas',width:12},
+    {header:'MUESTRAS',key:'muestras',width:12},{header:'FREEZER',key:'freezer',width:10},
+    {header:'FECHA LLAMAR',key:'fecha_lla',width:14},
+    {header:'LEAD Razón Social',key:'lead_nombre',width:32},{header:'LEAD Dirección',key:'lead_dir',width:36},
+    {header:'LEAD WhatsApp',key:'lead_wa',width:20},{header:'LEAD Teléfono',key:'lead_tel',width:18},
+    {header:'LEAD Sitio Web',key:'lead_web',width:28},{header:'LEAD Instagram',key:'lead_ig',width:20},
+  ];
+  const hdr=ws.getRow(1);
+  hdr.eachCell(cell=>{
+    cell.font={bold:true,color:{argb:'FFFFFFFF'},size:11};
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E5C8A'}};
+    cell.alignment={vertical:'middle',horizontal:'center'};
+    cell.border={top:{style:'thin',color:{argb:'FF0D4070'}},bottom:{style:'thin',color:{argb:'FF0D4070'}}};
+  });
+  hdr.height=20;ws.views=[{state:'frozen',ySplit:1}];
+  rows.forEach((r,i)=>{
+    const lead=r.place_id?leadMap.get(r.place_id):null;
+    const row=ws.addRow({
+      nombre:r.nombre||'',telefono:r.telefono||'',contacto:r.contacto||'',
+      direccion:r.direccion||'',fecha_ing:r.fecha_ingreso?r.fecha_ingreso.slice(0,10):'',
+      resultado:r.resultado||'',proveedores:r.proveedores||'',listas:r.listas_precio||'',
+      muestras:r.muestras||'',freezer:r.freezer||'',fecha_lla:r.fecha_llamar?r.fecha_llamar.slice(0,10):'',
+      lead_nombre:lead?lead.nombre||'':'',lead_dir:lead?lead.direccion||'':'',
+      lead_wa:lead?lead.whatsapp||'':'',lead_tel:lead?lead.telefono||'':'',
+      lead_web:lead?lead.sitio_web||'':'',lead_ig:lead?lead.instagram||'':'',
+    });
+    if(i%2===1)row.eachCell(cell=>{cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F7FA'}};});
+    const rv=(r.resultado||'').toUpperCase();
+    let fc=null;
+    if(rv.includes('NEGATIVO')||rv.includes('NRGATIVO'))fc='FFC0392B';
+    else if(rv.includes('CLIENTE NUEVO'))fc='FF7B1FA2';
+    if(fc)row.eachCell(cell=>{cell.font={color:{argb:fc}};});
+    row.eachCell(cell=>{cell.alignment={vertical:'middle',wrapText:false};});
+  });
+  ws.autoFilter={from:'A1',to:'Q1'};
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`clientes_claudio_${new Date().toISOString().slice(0,10)}.xlsx`;a.click();
+  cc_toast(`Exportado ${rows.length} filas ✓`);
+}
+
+async f
