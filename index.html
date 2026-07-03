@@ -2513,4 +2513,29 @@ async function cc_export(){
   cc_toast(`Exportado ${rows.length} filas ✓`);
 }
 
-async f
+async function cc_addCliente(){
+  const nombre=prompt('Nombre del cliente:');
+  if(!nombre?.trim())return;
+  const{data,error}=await sb.from('clientes_claudio').insert({nombre:nombre.trim()}).select().single();
+  if(error){cc_toast('Error al crear cliente',true);return;}
+  cc_rows.unshift(data);cc_render();
+  document.getElementById('cc-table-wrap').scrollTop=0;cc_toast('Cliente creado ✓');
+}
+
+function cc_toast(msg,isError=false){
+  const t=document.getElementById('cc-toast');
+  t.textContent=msg;t.className='show'+(isError?' error':'');
+  clearTimeout(cc_toastTimer);cc_toastTimer=setTimeout(()=>{t.className='';},2500);
+}
+// ══ FIN CLIENTES CLAUDIO ═════════════════════════════════════════════════════
+
+
+loadLeads();
+_initEmailDraftListeners();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
