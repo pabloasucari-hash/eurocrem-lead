@@ -1465,6 +1465,9 @@ async function exportXLSX(){
   // Activar autofiltro
   ws.autoFilter={from:{row:1,column:1},to:{row:1,column:ws.columns.length}};
 
+  // Helper fecha ISO → dd/mm/yyyy
+  const fmtD=v=>{const m=(v||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?`${m[3]}/${m[2]}/${m[1]}`:v||'';};
+
   // Agregar datos
   leads.forEach((l,i)=>{
     const row=ws.addRow({
@@ -1487,7 +1490,7 @@ async function exportXLSX(){
       notas_internas: l.notas_internas||'',
       claudio:          ccMap.has(l.place_id) ? (ccMap.get(l.place_id).nombre||'Sí') : '',
       cc_contacto:      ccMap.has(l.place_id) ? (ccMap.get(l.place_id).contacto||'') : '',
-      cc_fecha_ingreso: ccMap.has(l.place_id) ? (ccMap.get(l.place_id).fecha_ingreso||'') : '',
+      cc_fecha_ingreso: ccMap.has(l.place_id) ? fmtD(ccMap.get(l.place_id).fecha_ingreso) : '',
       cc_resultado:     ccMap.has(l.place_id) ? (ccMap.get(l.place_id).resultado||'') : '',
       cc_proveedores:   ccMap.has(l.place_id) ? (ccMap.get(l.place_id).proveedores||'') : '',
     });
@@ -1507,16 +1510,21 @@ async function exportXLSX(){
     }
     if(ccMap.has(l.place_id)){
       const cc=ccMap.get(l.place_id);
-      row.getCell('claudio').font={bold:true,color:{argb:'FF1565C0'}};
+      const blueFont={bold:true,color:{argb:'FF1565C0'}};
+      row.getCell('claudio').font=blueFont;
+      if(cc.contacto)      row.getCell('cc_contacto').font=blueFont;
+      if(cc.fecha_ingreso) row.getCell('cc_fecha_ingreso').font=blueFont;
+      if(cc.proveedores)   row.getCell('cc_proveedores').font=blueFont;
+      // resultado: rojo=negativo, violeta=cliente nuevo, negro=resto
       const res=(cc.resultado||'').toLowerCase();
       if(res){
         const resCel=row.getCell('cc_resultado');
         if(res.includes('negativ')||res==='no'){
-          resCel.font={bold:true,color:{argb:'FFCC0000'}};         // rojo — negativo
+          resCel.font={bold:true,color:{argb:'FFCC0000'}};
         } else if(res.includes('nuevo')||res.includes('client')){
-          resCel.font={bold:true,color:{argb:'FF7B1FA2'}};         // violeta — cliente nuevo
+          resCel.font={bold:true,color:{argb:'FF7B1FA2'}};
         } else {
-          resCel.font={color:{argb:'FF1A1A1A'}};                   // negro — resto
+          resCel.font={bold:true,color:{argb:'FF1A1A1A'}};
         }
       }
     }
@@ -2421,42 +2429,72 @@ async function cc_openEnlazar(clienteId,nombreClaudio,dirClaudio){
   panel.classList.add('open');foto.classList.add('hidden');
   title.textContent='Enlazar cliente';
   body.innerHTML='<div style="color:#bbb;font-style:italic;font-size:12px">Buscando…</div>';
+
+  // Auto-sugerencias por palabras del nombre + número de dirección
   const palabras=(nombreClaudio||'').trim().split(/\s+/).slice(0,3);
-  let sug=[];
+  let autoSug=[];
   for(const p of palabras){
     if(p.length<3)continue;
     const{data}=await sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota').ilike('nombre',`%${p}%`).limit(6);
-    if(data)sug.push(...data);
+    if(data)autoSug.push(...data);
   }
   if(dirClaudio){
     const num=(dirClaudio.match(/\d+/)||[])[0];
-    if(num){const{data}=await sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota').ilike('direccion',`%${num}%`).limit(4);if(data)sug.push(...data);}
+    if(num){const{data}=await sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota').ilike('direccion',`%${num}%`).limit(4);if(data)autoSug.push(...data);}
   }
-  const seen=new Set();
-  sug=sug.filter(s=>{if(seen.has(s.place_id))return false;seen.add(s.place_id);return true;}).slice(0,8);
-  let html=`<div class="lp-section">Cliente Claudio</div>
-    <div class="lp-row"><div class="lp-icon">👤</div><div class="lp-val"><strong>${cc_esc(nombreClaudio)}</strong></div></div>
-    ${dirClaudio?`<div class="lp-row"><div class="lp-icon">📍</div><div class="lp-val">${cc_esc(dirClaudio)}</div></div>`:''}
-    <div class="lp-section">Sugerencias${sug.length?' ('+sug.length+')':''}</div>`;
-  if(!sug.length){
-    html+=`<div style="color:#bbb;font-style:italic;font-size:12px">Sin coincidencias. Buscar en leads manualmente.</div>`;
-  }else{
-    sug.forEach(s=>{
-      let stars='';
-      if(s.google_nota){const f=Math.round(s.google_nota);stars=`<span class="lp-stars">${'★'.repeat(f)}${'☆'.repeat(5-f)}</span> ${s.google_nota} `;}
-      html+=`<div style="border:1px solid #e0e0e0;border-radius:8px;padding:10px;margin-bottom:8px">
-        <div style="font-weight:700;font-size:13px;margin-bottom:3px">${cc_esc(s.nombre)}</div>
-        ${s.direccion?`<div style="font-size:12px;color:#555;margin-bottom:2px">📍 ${cc_esc(s.direccion)}</div>`:''}
-        ${s.barrio?`<div style="font-size:12px;color:#888;margin-bottom:6px">🏘 ${cc_esc(s.barrio)}</div>`:''}
-        ${s.google_nota?`<div style="font-size:12px;margin-bottom:6px">${stars}</div>`:''}
-        <button class="cc-confirm-btn" data-pid="${cc_esc(s.place_id)}"
-          style="width:100%;padding:7px;background:#1a73e8;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer">✓ Este es</button>
-      </div>`;
+  const seenAuto=new Set();
+  autoSug=autoSug.filter(s=>{if(seenAuto.has(s.place_id))return false;seenAuto.add(s.place_id);return true;}).slice(0,8);
+
+  function renderSug(list,label){
+    let h=`<div class="lp-section">${cc_esc(label||'Sugerencias')}${list.length?' ('+list.length+')':''}</div>`;
+    if(!list.length){
+      h+='<div style="color:#bbb;font-style:italic;font-size:12px">Sin coincidencias.</div>';
+    }else{
+      list.forEach(s=>{
+        let stars='';
+        if(s.google_nota){const f=Math.round(s.google_nota);stars=`<span class="lp-stars">${'★'.repeat(f)}${'☆'.repeat(5-f)}</span> ${s.google_nota} `;}
+        h+=`<div style="border:1px solid #e0e0e0;border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:3px">${cc_esc(s.nombre)}</div>
+          ${s.direccion?`<div style="font-size:12px;color:#555;margin-bottom:2px">📍 ${cc_esc(s.direccion)}</div>`:''}
+          ${s.barrio?`<div style="font-size:12px;color:#888;margin-bottom:6px">🏘 ${cc_esc(s.barrio)}</div>`:''}
+          ${s.google_nota?`<div style="font-size:12px;margin-bottom:6px">${stars}</div>`:''}
+          <button class="cc-confirm-btn" data-pid="${cc_esc(s.place_id)}"
+            style="width:100%;padding:7px;background:#1a73e8;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer">✓ Este es</button>
+        </div>`;
+      });
+    }
+    document.getElementById('cc-sug-list').innerHTML=h;
+    document.getElementById('cc-sug-list').querySelectorAll('.cc-confirm-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>cc_confirmLink(btn.dataset.pid,btn));
     });
   }
-  body.innerHTML=html;
-  body.querySelectorAll('.cc-confirm-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>cc_confirmLink(btn.dataset.pid,btn));
+
+  body.innerHTML=`
+    <div class="lp-section">Cliente Claudio</div>
+    <div class="lp-row"><div class="lp-icon">👤</div><div class="lp-val"><strong>${cc_esc(nombreClaudio)}</strong></div></div>
+    ${dirClaudio?`<div class="lp-row"><div class="lp-icon">📍</div><div class="lp-val">${cc_esc(dirClaudio)}</div></div>`:''}
+    <div class="lp-section" style="margin-top:14px">Buscar en leads</div>
+    <input id="cc-enlazar-search" type="search" placeholder="Nombre o dirección del restaurante…"
+      style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;margin-bottom:10px;outline:none;box-sizing:border-box">
+    <div id="cc-sug-list"></div>
+  `;
+  renderSug(autoSug,'Sugerencias automáticas');
+
+  let debTimer;
+  document.getElementById('cc-enlazar-search').addEventListener('input',async e=>{
+    clearTimeout(debTimer);
+    const q=(e.target.value||'').trim();
+    if(!q){renderSug(autoSug,'Sugerencias automáticas');return;}
+    document.getElementById('cc-sug-list').innerHTML='<div style="color:#bbb;font-size:12px">Buscando…</div>';
+    debTimer=setTimeout(async()=>{
+      const[{data:byN},{data:byD}]=await Promise.all([
+        sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota').ilike('nombre',`%${q}%`).limit(8),
+        sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota').ilike('direccion',`%${q}%`).limit(6),
+      ]);
+      const seen2=new Set();
+      const res=[...(byN||[]),...(byD||[])].filter(s=>{if(seen2.has(s.place_id))return false;seen2.add(s.place_id);return true;}).slice(0,10);
+      renderSug(res,`Resultados para "${q}"`);
+    },350);
   });
 }
 
