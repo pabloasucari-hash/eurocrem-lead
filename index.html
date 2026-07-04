@@ -356,7 +356,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   <!-- SIDEBAR -->
   <div id="sidebar">
     <div id="sidebar-header">
-      <input type="text" id="search" placeholder="Buscar restaurante...">
+      <input type="text" id="search" placeholder="Buscar por nombre o dirección...">
       <div class="filter-row">
         <select id="filter-barrio"><option value="">Todos los barrios</option></select>
         <select id="filter-tipo">
@@ -866,7 +866,7 @@ function getFiltered(){
   const status=document.getElementById('filter-status').value;
   const coords=document.getElementById('filter-coords').value;
   return allLeads.filter(l=>{
-    if(q&&!norm(l.nombre).includes(q)) return false;
+    if(q&&!norm(l.nombre||'').includes(q)&&!norm(l.direccion||'').includes(q)) return false;
     if(barrio&&l.barrio!==barrio) return false;
     if(tipo&&getTipo(l.nombre)!==tipo) return false;
     if(status==='solo-email'&&(!l.email||l.whatsapp)) return false;
@@ -1403,8 +1403,8 @@ async function exportXLSX(){
   if(!leads.length){ alert('No hay leads con los filtros actuales.'); return; }
 
   // Cargar clientes Claudio para columna de cruce
-  const{data:ccData}=await sb.from('clientes_claudio').select('place_id,nombre').not('place_id','is',null);
-  const ccMap=new Map(ccData?.filter(c=>c.place_id).map(c=>[c.place_id,c.nombre])||[]);
+  const{data:ccData}=await sb.from('clientes_claudio').select('place_id,nombre,contacto,fecha_ingreso,resultado,proveedores').not('place_id','is',null);
+  const ccMap=new Map(ccData?.filter(c=>c.place_id).map(c=>[c.place_id,c])||[]);
 
   // Nombre del archivo
   const parts=['leads'];
@@ -1426,10 +1426,14 @@ async function exportXLSX(){
     views:[{state:'frozen',xSplit:0,ySplit:1}]
   });
 
-  // Columnas — Cliente Claudio primero
+  // Columnas — Cliente Claudio + datos Claudio primero
   ws.columns=[
-    {header:'Cliente Claudio',  key:'claudio',        width:22},
-    {header:'Nombre',           key:'nombre',         width:38},
+    {header:'Cliente Claudio',     key:'claudio',          width:22},
+    {header:'Contacto Claudio',    key:'cc_contacto',      width:16},
+    {header:'F. Ingreso Claudio',  key:'cc_fecha_ingreso', width:16},
+    {header:'Resultado Claudio',   key:'cc_resultado',     width:18},
+    {header:'Proveedores Claudio', key:'cc_proveedores',   width:22},
+    {header:'Nombre',              key:'nombre',           width:38},
     {header:'WhatsApp',         key:'whatsapp',       width:20},
     {header:'Teléfono',         key:'telefono',       width:16},
     {header:'Dirección',        key:'direccion',      width:46},
@@ -1481,7 +1485,11 @@ async function exportXLSX(){
       cliente:      l.cliente_eurocrem||'N',
       origen:       l.origen_contacto||'',
       notas_internas: l.notas_internas||'',
-      claudio: ccMap.has(l.place_id) ? (ccMap.get(l.place_id)||'Sí') : '',
+      claudio:          ccMap.has(l.place_id) ? (ccMap.get(l.place_id).nombre||'Sí') : '',
+      cc_contacto:      ccMap.has(l.place_id) ? (ccMap.get(l.place_id).contacto||'') : '',
+      cc_fecha_ingreso: ccMap.has(l.place_id) ? (ccMap.get(l.place_id).fecha_ingreso||'') : '',
+      cc_resultado:     ccMap.has(l.place_id) ? (ccMap.get(l.place_id).resultado||'') : '',
+      cc_proveedores:   ccMap.has(l.place_id) ? (ccMap.get(l.place_id).proveedores||'') : '',
     });
     row.height=16;
     const fillColor=i%2===0?'FFFAFAFA':'FFFFFFFF';
@@ -1498,8 +1506,19 @@ async function exportXLSX(){
       c.font={bold:true,color:{argb:'FF2E7D32'}};
     }
     if(ccMap.has(l.place_id)){
-      const c=row.getCell('claudio');
-      c.font={bold:true,color:{argb:'FF1565C0'}};
+      const cc=ccMap.get(l.place_id);
+      row.getCell('claudio').font={bold:true,color:{argb:'FF1565C0'}};
+      const res=(cc.resultado||'').toLowerCase();
+      if(res){
+        const resCel=row.getCell('cc_resultado');
+        if(res.includes('negativ')||res==='no'){
+          resCel.font={bold:true,color:{argb:'FFCC0000'}};         // rojo — negativo
+        } else if(res.includes('nuevo')||res.includes('client')){
+          resCel.font={bold:true,color:{argb:'FF7B1FA2'}};         // violeta — cliente nuevo
+        } else {
+          resCel.font={color:{argb:'FF1A1A1A'}};                   // negro — resto
+        }
+      }
     }
   });
 
