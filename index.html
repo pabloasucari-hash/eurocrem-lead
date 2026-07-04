@@ -1515,16 +1515,14 @@ async function exportXLSX(){
       if(cc.contacto)      row.getCell('cc_contacto').font=blueFont;
       if(cc.fecha_ingreso) row.getCell('cc_fecha_ingreso').font=blueFont;
       if(cc.proveedores)   row.getCell('cc_proveedores').font=blueFont;
-      // resultado: rojo=negativo, violeta=cliente nuevo, negro=resto
-      const res=(cc.resultado||'').toLowerCase();
-      if(res){
+      // resultado: misma lógica que tab Claudio
+      const resUp=(cc.resultado||'').toUpperCase();
+      if(resUp){
         const resCel=row.getCell('cc_resultado');
-        if(res.includes('negativ')||res==='no'){
-          resCel.font={bold:true,color:{argb:'FFCC0000'}};
-        } else if(res.includes('nuevo')||res.includes('client')){
-          resCel.font={bold:true,color:{argb:'FF7B1FA2'}};
-        } else {
-          resCel.font={bold:true,color:{argb:'FF1A1A1A'}};
+        if(resUp.includes('NEGATIVO')||resUp.includes('NRGATIVO')){
+          resCel.font={bold:true,color:{argb:'FFC0392B'}};   // rojo
+        } else if(resUp.includes('CLIENTE NUEVO')){
+          resCel.font={bold:true,color:{argb:'FF7B1FA2'}};   // violeta
         }
       }
     }
@@ -2435,12 +2433,12 @@ async function cc_openEnlazar(clienteId,nombreClaudio,dirClaudio){
   let autoSug=[];
   for(const p of palabras){
     if(p.length<3)continue;
-    const{data}=await sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota').ilike('nombre',`%${p}%`).limit(6);
+    const{data}=await sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota,whatsapp,telefono,instagram,facebook,sitio_web').ilike('nombre',`%${p}%`).limit(6);
     if(data)autoSug.push(...data);
   }
   if(dirClaudio){
     const num=(dirClaudio.match(/\d+/)||[])[0];
-    if(num){const{data}=await sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota').ilike('direccion',`%${num}%`).limit(4);if(data)autoSug.push(...data);}
+    if(num){const{data}=await sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota,whatsapp,telefono,instagram,facebook,sitio_web').ilike('direccion',`%${num}%`).limit(4);if(data)autoSug.push(...data);}
   }
   const seenAuto=new Set();
   autoSug=autoSug.filter(s=>{if(seenAuto.has(s.place_id))return false;seenAuto.add(s.place_id);return true;}).slice(0,8);
@@ -2453,10 +2451,18 @@ async function cc_openEnlazar(clienteId,nombreClaudio,dirClaudio){
       list.forEach(s=>{
         let stars='';
         if(s.google_nota){const f=Math.round(s.google_nota);stars=`<span class="lp-stars">${'★'.repeat(f)}${'☆'.repeat(5-f)}</span> ${s.google_nota} `;}
+        const contactos=[
+          s.whatsapp?`💬 ${cc_esc(s.whatsapp)}`:'',
+          s.telefono?`📞 ${cc_esc(s.telefono)}`:'',
+          s.instagram?`📷 ${cc_esc(s.instagram)}`:'',
+          s.facebook?`👥 ${cc_esc(s.facebook)}`:'',
+          s.sitio_web?`🌐 ${cc_esc(s.sitio_web)}`:'',
+        ].filter(Boolean);
         h+=`<div style="border:1px solid #e0e0e0;border-radius:8px;padding:10px;margin-bottom:8px">
           <div style="font-weight:700;font-size:13px;margin-bottom:3px">${cc_esc(s.nombre)}</div>
           ${s.direccion?`<div style="font-size:12px;color:#555;margin-bottom:2px">📍 ${cc_esc(s.direccion)}</div>`:''}
-          ${s.barrio?`<div style="font-size:12px;color:#888;margin-bottom:6px">🏘 ${cc_esc(s.barrio)}</div>`:''}
+          ${s.barrio?`<div style="font-size:12px;color:#888;margin-bottom:4px">🏘 ${cc_esc(s.barrio)}</div>`:''}
+          ${contactos.length?`<div style="font-size:11px;color:#444;margin-bottom:4px;line-height:1.6">${contactos.join('<br>')}</div>`:''}
           ${s.google_nota?`<div style="font-size:12px;margin-bottom:6px">${stars}</div>`:''}
           <button class="cc-confirm-btn" data-pid="${cc_esc(s.place_id)}"
             style="width:100%;padding:7px;background:#1a73e8;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer">✓ Este es</button>
@@ -2488,8 +2494,8 @@ async function cc_openEnlazar(clienteId,nombreClaudio,dirClaudio){
     document.getElementById('cc-sug-list').innerHTML='<div style="color:#bbb;font-size:12px">Buscando…</div>';
     debTimer=setTimeout(async()=>{
       const[{data:byN},{data:byD}]=await Promise.all([
-        sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota').ilike('nombre',`%${q}%`).limit(8),
-        sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota').ilike('direccion',`%${q}%`).limit(6),
+        sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota,whatsapp,telefono,instagram,facebook,sitio_web').ilike('nombre',`%${q}%`).limit(8),
+        sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota,whatsapp,telefono,instagram,facebook,sitio_web').ilike('direccion',`%${q}%`).limit(6),
       ]);
       const seen2=new Set();
       const res=[...(byN||[]),...(byD||[])].filter(s=>{if(seen2.has(s.place_id))return false;seen2.add(s.place_id);return true;}).slice(0,10);
