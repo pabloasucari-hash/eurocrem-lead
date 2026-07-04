@@ -670,6 +670,7 @@ Si querés conocer nuestro catálogo o recibir una cotización sin compromiso, c
       <option value="PASAR">Pasar</option>
       <option value="INTERESADO">Interesado</option>
     </select>
+    <select class="cc-sel" id="cc-fil-fecha"><option value="">F. Ingreso: todas</option></select>
     <select class="cc-sel" id="cc-fil-match">
       <option value="">Leads: todos</option>
       <option value="si">Con lead vinculado</option>
@@ -2200,7 +2201,7 @@ async function recCargar(id){
 
 // ══ CLIENTES CLAUDIO TAB ═════════════════════════════════════════════════════
 let cc_rows=[],cc_sortCol=null,cc_sortDir=1;
-let cc_filterRes='',cc_filterMatch='',cc_searchStr='';
+let cc_filterRes='',cc_filterMatch='',cc_filterFecha='',cc_searchStr='';
 let cc_activeInput=null,cc_currentEnlazarId=null;
 let cc_inited=false,cc_toastTimer;
 const CC_DATE=new Set(['fecha_ingreso','fecha_llamar']);
@@ -2210,6 +2211,7 @@ function cc_init(){
   cc_inited=true;
   document.getElementById('cc-search-box').addEventListener('input',e=>{cc_searchStr=e.target.value;cc_render();});
   document.getElementById('cc-fil-resultado').addEventListener('change',e=>{cc_filterRes=e.target.value;cc_render();});
+  document.getElementById('cc-fil-fecha').addEventListener('change',e=>{cc_filterFecha=e.target.value;cc_render();});
   document.getElementById('cc-fil-match').addEventListener('change',e=>{cc_filterMatch=e.target.value;cc_render();});
   document.getElementById('cc-btn-export').addEventListener('click',cc_export);
   document.getElementById('cc-btn-add').addEventListener('click',cc_addCliente);
@@ -2239,7 +2241,13 @@ async function cc_load(){
     .select('id,nombre,telefono,contacto,direccion,fecha_ingreso,resultado,proveedores,listas_precio,muestras,freezer,fecha_llamar,place_id,apify_buscado_at')
     .order('nombre');
   if(error){cc_toast('Error cargando datos',true);return;}
-  cc_rows=data;cc_render();
+  cc_rows=data;
+  // Poblar años disponibles en el filtro de fecha ingreso
+  const años=[...new Set(data.map(r=>(r.fecha_ingreso||'').slice(0,4)).filter(y=>y.length===4))].sort().reverse();
+  const selFecha=document.getElementById('cc-fil-fecha');
+  selFecha.innerHTML='<option value="">F. Ingreso: todas</option>';
+  años.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;selFecha.appendChild(o);});
+  cc_render();
 }
 
 function cc_visible(){
@@ -2249,6 +2257,7 @@ function cc_visible(){
     rows=rows.filter(r=>(r.nombre||'').toLowerCase().includes(q)||(r.telefono||'').toLowerCase().includes(q)||(r.contacto||'').toLowerCase().includes(q)||(r.direccion||'').toLowerCase().includes(q));
   }
   if(cc_filterRes)rows=rows.filter(r=>(r.resultado||'').toUpperCase().includes(cc_filterRes));
+  if(cc_filterFecha) rows=rows.filter(r=>(r.fecha_ingreso||'').startsWith(cc_filterFecha));
   if(cc_filterMatch==='si')      rows=rows.filter(r=>r.place_id);
   if(cc_filterMatch==='enlazar') rows=rows.filter(r=>!r.place_id&&r.apify_buscado_at);
   if(cc_filterMatch==='no')      rows=rows.filter(r=>!r.place_id);
@@ -2423,20 +2432,25 @@ async function cc_openEnlazar(clienteId,nombreClaudio,dirClaudio){
   title.textContent='Enlazar cliente';
   body.innerHTML='<div style="color:#bbb;font-style:italic;font-size:12px">Buscando…</div>';
 
+  // Búsqueda local sobre allLeads (ya en memoria) — norm() normaliza acentos en ambas direcciones
+  const dedupe=(arr)=>{const s=new Set();return arr.filter(x=>{if(s.has(x.place_id))return false;s.add(x.place_id);return true;});};
+  const localSearch=(q,field='nombre',limit=8)=>{
+    const nq=norm(q);
+    return allLeads.filter(l=>norm(l[field]||'').includes(nq)).slice(0,limit);
+  };
+
   // Auto-sugerencias por palabras del nombre + número de dirección
   const palabras=(nombreClaudio||'').trim().split(/\s+/).slice(0,3);
   let autoSug=[];
   for(const p of palabras){
     if(p.length<3)continue;
-    const{data}=await sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota,whatsapp,telefono,instagram,facebook,sitio_web').ilike('nombre',`%${p}%`).limit(6);
-    if(data)autoSug.push(...data);
+    autoSug.push(...localSearch(p,'nombre',6));
   }
   if(dirClaudio){
     const num=(dirClaudio.match(/\d+/)||[])[0];
-    if(num){const{data}=await sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota,whatsapp,telefono,instagram,facebook,sitio_web').ilike('direccion',`%${num}%`).limit(4);if(data)autoSug.push(...data);}
+    if(num) autoSug.push(...localSearch(num,'direccion',4));
   }
-  const seenAuto=new Set();
-  autoSug=autoSug.filter(s=>{if(seenAuto.has(s.place_id))return false;seenAuto.add(s.place_id);return true;}).slice(0,8);
+  autoSug=dedupe(autoSug).slice(0,8);
 
   function renderSug(list,label){
     let h=`<div class="lp-section">${cc_esc(label||'Sugerencias')}${list.length?' ('+list.length+')':''}</div>`;
@@ -2487,15 +2501,12 @@ async function cc_openEnlazar(clienteId,nombreClaudio,dirClaudio){
     const q=(e.target.value||'').trim();
     if(!q){renderSug(autoSug,'Sugerencias automáticas');return;}
     document.getElementById('cc-sug-list').innerHTML='<div style="color:#bbb;font-size:12px">Buscando…</div>';
-    debTimer=setTimeout(async()=>{
-      const[{data:byN},{data:byD}]=await Promise.all([
-        sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota,whatsapp,telefono,instagram,facebook,sitio_web').ilike('nombre',`%${q}%`).limit(8),
-        sb.from('leads').select('place_id,nombre,direccion,barrio,google_nota,whatsapp,telefono,instagram,facebook,sitio_web').ilike('direccion',`%${q}%`).limit(6),
-      ]);
-      const seen2=new Set();
-      const res=[...(byN||[]),...(byD||[])].filter(s=>{if(seen2.has(s.place_id))return false;seen2.add(s.place_id);return true;}).slice(0,10);
+    debTimer=setTimeout(()=>{
+      const byN=localSearch(q,'nombre',8);
+      const byD=localSearch(q,'direccion',6);
+      const res=dedupe([...byN,...byD]).slice(0,10);
       renderSug(res,`Resultados para "${q}"`);
-    },350);
+    },200);
   });
 }
 
