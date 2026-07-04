@@ -1510,21 +1510,16 @@ async function exportXLSX(){
     }
     if(ccMap.has(l.place_id)){
       const cc=ccMap.get(l.place_id);
-      const blueFont={bold:true,color:{argb:'FF1565C0'}};
-      row.getCell('claudio').font=blueFont;
-      if(cc.contacto)      row.getCell('cc_contacto').font=blueFont;
-      if(cc.fecha_ingreso) row.getCell('cc_fecha_ingreso').font=blueFont;
-      if(cc.proveedores)   row.getCell('cc_proveedores').font=blueFont;
-      // resultado: misma lógica que tab Claudio
       const resUp=(cc.resultado||'').toUpperCase();
-      if(resUp){
-        const resCel=row.getCell('cc_resultado');
-        if(resUp.includes('NEGATIVO')||resUp.includes('NRGATIVO')){
-          resCel.font={bold:true,color:{argb:'FFC0392B'}};   // rojo
-        } else if(resUp.includes('CLIENTE NUEVO')){
-          resCel.font={bold:true,color:{argb:'FF7B1FA2'}};   // violeta
-        }
-      }
+      // El resultado determina el color de TODAS las columnas Claudio
+      let ccArgb;
+      if(resUp.includes('NEGATIVO')||resUp.includes('NRGATIVO')) ccArgb='FFC0392B';      // rojo
+      else if(resUp.includes('CLIENTE NUEVO'))                    ccArgb='FF7B1FA2';      // violeta
+      else                                                         ccArgb='FF1565C0';      // azul (default)
+      const ccFont={bold:true,color:{argb:ccArgb}};
+      ['claudio','cc_contacto','cc_fecha_ingreso','cc_resultado','cc_proveedores'].forEach(k=>{
+        row.getCell(k).font=ccFont;
+      });
     }
   });
 
